@@ -16,7 +16,7 @@ public class GameBoard {
     private int horizontalTiles = 20;
     private int verticalTiles = 15;
     private Intersection intersection;
-    private Intersection southExit;
+    private RoadQueue southExit;
 
 
     public GameBoard(int numOfIntersections) throws IOException {
@@ -26,7 +26,7 @@ public class GameBoard {
     private void generateBoard(int numOfIntersections) throws IOException {
         Tuple intersectionPosition = insertIntersection(numOfIntersections);
         this.intersection = new Intersection(intersectionPosition);
-        this.southExit = new Intersection(new Tuple(10,15));
+        this.southExit = new RoadQueue(true);
         insertRoads(intersectionPosition);
     }
 
@@ -54,13 +54,15 @@ public class GameBoard {
     }
 
     public void draw(Graphics g) {
+        g.drawImage(intersection.getTrafficLightImage(), (intersection.getPosition().getX() - 1) * 40, (intersection.getPosition().getY() -1) * 40, null);
         for (Tuple tuple : boardMap.keySet()) {
             boardMap.get(tuple).draw(tuple, g);
         }
+
         for (Vehicle vehicle : intersection.getNorthEntrance().getQueue()) {
             vehicle.draw(g);
         }
-        for (Vehicle vehicle : southExit.getNorthEntrance().getQueue()) {
+        for (Vehicle vehicle : southExit.getQueue()) {
             vehicle.draw(g);
         }
     }
@@ -73,12 +75,10 @@ public class GameBoard {
     public void updateState() {
         if (turn % 510 == 0){
             intersection.getNorthEntrance().setCanPass(true);
-            System.out.println(true);
         }
 
         if (turn % 250 ==0 || turn % 620 ==0 ){
             intersection.getNorthEntrance().setCanPass(false);
-            System.out.println(false);
         }
         if (turn % 100 == 0){
             try {
@@ -95,37 +95,42 @@ public class GameBoard {
         for (ListIterator<Vehicle> iterator = queue.listIterator(); iterator.hasNext(); ) {
             Vehicle currentVehicle = iterator.next();
             Tuple currentVehiclePosition = currentVehicle.getPosition();
-            if (currentVehicle != queue.getFirst()){
+            if (currentVehicle == queue.getFirst()) {
+                if (currentVehiclePosition.getY() < intersection.getPosition().getY() * 40 -40){
+                    currentVehicle.drive(true);
+                }
+                else if (currentVehiclePosition.getY() == intersection.getPosition().getY() * 40 -40){
+                    if (intersection.getNorthEntrance().isCanPass()){
+                        currentVehicle.drive(true);
+                    }
+                    else {
+                        currentVehicle.drive(false);
+                    }
+                }
+                else {
+                    southExit.getQueue().add(currentVehicle);
+                    iterator.remove();
+                }
+
+            } else {
                 iterator.previous();
                 Vehicle vehicleInFront = iterator.previous();
                 Tuple vehicleInFrontPosition = vehicleInFront.getPosition();
                 if (currentVehiclePosition.getY() < vehicleInFrontPosition.getY() - 40){
-                    currentVehicle.drive();
-                }
-                iterator.next();
-                iterator.next();
-            }
-            else{
-                if (currentVehiclePosition.getY() < intersection.getPosition().getY() * 40 -40){
-                    currentVehicle.drive();
-                }
-                else if (currentVehiclePosition.getY() == intersection.getPosition().getY() * 40 -40){
-                    if (intersection.getNorthEntrance().isCanPass()){
-                        currentVehicle.drive();
-                    }
+                    currentVehicle.drive(true);
                 }
                 else {
-                    southExit.getNorthEntrance().getQueue().add(currentVehicle);
-                    iterator.remove();
+                    currentVehicle.drive(false);
                 }
-
+                iterator.next();
+                iterator.next();
             }
         }
-        LinkedList<Vehicle> exit = southExit.getNorthEntrance().getQueue();
+        LinkedList<Vehicle> exit = southExit.getQueue();
         for (ListIterator<Vehicle> iterator = exit.listIterator(); iterator.hasNext(); ) {
             Vehicle currentVehicle = iterator.next();
-            currentVehicle.drive();
-            if (currentVehicle.getPosition().getY() > southExit.getPosition().getY() * 40) {
+            currentVehicle.drive(true);
+            if (currentVehicle.getPosition().getY() > 600) {
                 iterator.remove();
             }
         }

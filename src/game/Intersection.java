@@ -2,6 +2,9 @@ package game;
 
 import vehicles.Vehicle;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.LinkedList;
 
 /**
@@ -13,8 +16,10 @@ public class Intersection {
     private RoadQueue southEntrance = new RoadQueue(true);
     private RoadQueue eastEntrance = new RoadQueue(true);
     private RoadQueue westEntrance = new RoadQueue(true);
+    private BufferedImage greenLight = ImageIO.read(getClass().getResource("greenLight.png"));
+    private BufferedImage redLight = ImageIO.read(getClass().getResource("redLight.png"));
 
-    public Intersection(Tuple position) {
+    public Intersection(Tuple position) throws IOException {
         this.position = position;
     }
 
@@ -37,6 +42,8 @@ public class Intersection {
     public RoadQueue getWestEntrance() {
         return westEntrance;
     }
-
+    public BufferedImage getTrafficLightImage(){
+        return northEntrance.isCanPass() ? greenLight : redLight;
+    }
 
 }

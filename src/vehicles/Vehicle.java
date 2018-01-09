@@ -11,10 +11,9 @@ import java.awt.image.BufferedImage;
  * Created by alexanderm on 02/01/2018.
  */
 public interface Vehicle {
+    void drive(boolean state);
     BufferedImage getCarImage();
     Direction getDirection();
-    Tuple drive();
-    boolean canMove();
     Tuple getPosition();
     void draw(Graphics g);
 

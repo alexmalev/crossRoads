@@ -14,14 +14,13 @@ import java.io.IOException;
  */
 public class VehicleImpl implements Vehicle {
     private Tuple position;
-    private boolean canMove;
     private Direction direction;
     private BufferedImage carImage;
+    private int delayCounter = -1;
 
     public VehicleImpl(Tuple position, Direction direction) throws IOException {
         this.position = position;
         this.direction = direction;
-        this.canMove = true;
         this.carImage = createImage(direction);
                 
     }
@@ -50,6 +49,13 @@ public class VehicleImpl implements Vehicle {
 
 
     @Override
+    public void drive(boolean state) {
+        delayCounter = state ? delayCounter -1: 20;
+        if (delayCounter < 0)
+            performMove(position);
+    }
+
+    @Override
     public BufferedImage getCarImage() {
         return carImage;
     }
@@ -59,11 +65,6 @@ public class VehicleImpl implements Vehicle {
         return direction;
     }
 
-    @Override
-    public Tuple drive() {
-        performMove(position);
-        return position;
-    }
     private void performMove(Tuple position) {
         switch (direction) {
             case EAST:
@@ -80,12 +81,6 @@ public class VehicleImpl implements Vehicle {
                 break;
         }
 
-    }
-    
-
-    @Override
-    public boolean canMove() {
-        return canMove;
     }
 
     @Override
