@@ -48,10 +48,6 @@ public class VehicleImpl implements Vehicle {
         return carImage;
     }
 
-    @Override
-    public void controlMovement(Vehicle prevVehicle, Intersection intersection) {
-        canMove = !(atIntersection(intersection) || behindStoppedCar(prevVehicle));
-    }
 
     @Override
     public BufferedImage getCarImage() {
@@ -65,23 +61,8 @@ public class VehicleImpl implements Vehicle {
 
     @Override
     public Tuple drive() {
-        if (!canMove)
-            return position;
         performMove(position);
         return position;
-    }
-    private boolean behindStoppedCar(Vehicle prevVehicle) {
-        if (prevVehicle == null || prevVehicle.canMove())
-            return false;
-        Tuple prevVehiclePosition = prevVehicle.getPosition();
-        return position.getY() / 40 == prevVehiclePosition.getY() - 1;
-    }
-
-
-    private boolean atIntersection(Intersection intersection) {
-        return position.getX()/40 == intersection.getPosition().getX() &&
-                position.getY() == (intersection.getPosition().getY() - 1) * 40 &&
-                !intersection.getNorthEntrance().isCanPass();
     }
     private void performMove(Tuple position) {
         switch (direction) {
@@ -109,7 +90,7 @@ public class VehicleImpl implements Vehicle {
 
     @Override
     public Tuple getPosition() {
-        return new Tuple(position.getX() / 40, position.getY() / 40);
+        return new Tuple(position.getX(), position.getY());
     }
 
 

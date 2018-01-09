@@ -26,6 +26,7 @@ public class GameBoard {
     private void generateBoard(int numOfIntersections) throws IOException {
         Tuple intersectionPosition = insertIntersection(numOfIntersections);
         this.intersection = new Intersection(intersectionPosition);
+        this.southExit = new Intersection(new Tuple(10,15));
         insertRoads(intersectionPosition);
     }
 
@@ -59,6 +60,9 @@ public class GameBoard {
         for (Vehicle vehicle : intersection.getNorthEntrance().getQueue()) {
             vehicle.draw(g);
         }
+        for (Vehicle vehicle : southExit.getNorthEntrance().getQueue()) {
+            vehicle.draw(g);
+        }
     }
 
 
@@ -67,12 +71,12 @@ public class GameBoard {
     }
     private int turn = 1;
     public void updateState() {
-//        if (turn == 510){
-//            intersection.getNorthEntrance().setCanPass(true);
-//            System.out.println(true);
-//        }
+        if (turn % 510 == 0){
+            intersection.getNorthEntrance().setCanPass(true);
+            System.out.println(true);
+        }
 
-        if (turn == 250 || turn == 620){
+        if (turn % 250 ==0 || turn % 620 ==0 ){
             intersection.getNorthEntrance().setCanPass(false);
             System.out.println(false);
         }
@@ -87,11 +91,43 @@ public class GameBoard {
         controlVehicles();
     }
     private void controlVehicles() {
-        for (int i = 0; i < intersection.getNorthEntrance().getQueue().size(); i++) {
-            Vehicle vehicle = intersection.getNorthEntrance().getQueue().get(i);
-            Vehicle prevVehicle = i == 0 ? null : intersection.getNorthEntrance().getQueue().get(i-1);
-            vehicle.controlMovement(prevVehicle, intersection);
-            vehicle.drive();
+        LinkedList<Vehicle> queue = intersection.getNorthEntrance().getQueue();
+        for (ListIterator<Vehicle> iterator = queue.listIterator(); iterator.hasNext(); ) {
+            Vehicle currentVehicle = iterator.next();
+            Tuple currentVehiclePosition = currentVehicle.getPosition();
+            if (currentVehicle != queue.getFirst()){
+                iterator.previous();
+                Vehicle vehicleInFront = iterator.previous();
+                Tuple vehicleInFrontPosition = vehicleInFront.getPosition();
+                if (currentVehiclePosition.getY() < vehicleInFrontPosition.getY() - 40){
+                    currentVehicle.drive();
+                }
+                iterator.next();
+                iterator.next();
+            }
+            else{
+                if (currentVehiclePosition.getY() < intersection.getPosition().getY() * 40 -40){
+                    currentVehicle.drive();
+                }
+                else if (currentVehiclePosition.getY() == intersection.getPosition().getY() * 40 -40){
+                    if (intersection.getNorthEntrance().isCanPass()){
+                        currentVehicle.drive();
+                    }
+                }
+                else {
+                    southExit.getNorthEntrance().getQueue().add(currentVehicle);
+                    iterator.remove();
+                }
+
+            }
+        }
+        LinkedList<Vehicle> exit = southExit.getNorthEntrance().getQueue();
+        for (ListIterator<Vehicle> iterator = exit.listIterator(); iterator.hasNext(); ) {
+            Vehicle currentVehicle = iterator.next();
+            currentVehicle.drive();
+            if (currentVehicle.getPosition().getY() > southExit.getPosition().getY() * 40) {
+                iterator.remove();
+            }
         }
     }
 

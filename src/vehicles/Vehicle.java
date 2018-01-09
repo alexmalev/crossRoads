@@ -11,7 +11,6 @@ import java.awt.image.BufferedImage;
  * Created by alexanderm on 02/01/2018.
  */
 public interface Vehicle {
-    void controlMovement(Vehicle prevVehicle, Intersection intersection);
     BufferedImage getCarImage();
     Direction getDirection();
     Tuple drive();
