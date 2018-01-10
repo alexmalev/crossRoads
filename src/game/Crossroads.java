@@ -21,7 +21,6 @@ public class Crossroads extends JComponent implements ActionListener {
     public static void main(String[] args) throws IOException {
         JFrame window = new JFrame("Crossroads");
         Crossroads crossroadsGame = new Crossroads();
-        crossroadsGame.gameBoard.getVehicles().add(new VehicleImpl(new Tuple(400,0), Direction.SOUTH));
         window.add(crossroadsGame);
         window.pack();
         window.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
