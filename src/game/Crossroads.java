@@ -1,7 +1,5 @@
 package game;
 
-import vehicles.VehicleImpl;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
