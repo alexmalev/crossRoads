@@ -32,7 +32,7 @@ public class Crossroads extends JComponent {
         loadController();
         int i =0;
         while (true) {
-            if (i % 2 ==0){
+            if (i % 20 ==0){
                 try {
                     updateState();
                 } catch (InterruptedException e1) {
@@ -73,11 +73,11 @@ public class Crossroads extends JComponent {
             while (it.hasNext()) {
                 choices.add(it.next());
             }
-            if(choices.size()==1){
-                System.out.println("------------------------");
-                System.out.println("choices are, "+choices);
-                System.out.println("------------------------");
-            }
+//            if(choices.size()==1){
+//                System.out.println("------------------------");
+//                System.out.println("choices are, "+choices);
+//                System.out.println("------------------------");
+//            }
             int pick = (int) Math.floor(Math.random() * choices.size());
             currentState = choices.get(pick).id();
             Env.free(choices);
@@ -135,7 +135,7 @@ public class Crossroads extends JComponent {
 //            }
             String carMainCrossing = String.valueOf(gameBoard.isMainPassing());
             String carSideCrossing = String.valueOf(gameBoard.isSidePassing());
-            System.out.println("successing for: waitingNorth "+ waitingNorh + " waitingEast " + waitingEast + " mainCrossing " + carMainCrossing + " sideCrossing " + carSideCrossing);
+//            System.out.println("successing for: waitingNorth "+ waitingNorh + " waitingEast " + waitingEast + " mainCrossing " + carMainCrossing + " sideCrossing " + carSideCrossing);
             BDD succWithVehicles = succs.and(Env.getBDDValue("carMain", waitingNorh))
                     .and(Env.getBDDValue("carSide", waitingEast))
                     .and(Env.getBDDValue("carMainCrossing", carMainCrossing))

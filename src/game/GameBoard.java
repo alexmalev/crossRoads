@@ -240,7 +240,7 @@ public class GameBoard {
                 westExit.getQueue().add(vehicle);
                 break;
         }
-        System.out.println("removing vehicle from waiting" + vehicle.getDirection());
+//        System.out.println("removing vehicle from waiting" + vehicle.getDirection());
         intersection.getWaitingList(vehicle.getDirection()).remove(vehicle);
     }
 
