@@ -1,0 +1,47 @@
+import "../patterns/DwyerPatterns.spectra"
+/*
+ * Auto-generated Spectra file
+ */
+module Cross
+env Int(0..10) carMain;
+env Int(0..10) carSide;
+env boolean carMainCrossing;
+env boolean carSideCrossing;
+sys boolean goMain;
+sys boolean goSide;
+
+
+
+define
+  drainingIntersection := !goMain & !goSide;
+  mainCarProgressed:= next(carMain)<carMain &carMain>0;
+  sideCarProgressed:= next(carSide)<carSide &carSide>0;
+  mainCarsWaiting:=carMain>0;
+  sideCarsWaiting:=carSide>0;
+
+
+asm (!carMainCrossing & !carSideCrossing);
+//asm carMain=0;
+//asm carSide=0;
+asm G next(carMainCrossing) & (!carMainCrossing)->goMain;
+asm G next(carSideCrossing) & (!carSideCrossing)->goSide;
+
+
+// cars stay
+asm G !goMain -> next(carMain) >= carMain;
+asm G !goSide -> next(carSide) >= carSide;
+// on green cars drive
+asm G (goMain)  -> next(carMain) <= carMain;
+asm G (goSide)  -> next(carSide) <= carSide;
+
+
+gar G next(!goMain) & goMain -> carSide>carMain ;
+gar G next(!goSide) & goSide -> carMain>carSide ;
+ 
+
+gar G carSide>carMain->next(!goMain);
+gar G carMain>carSide->next(!goSide);
+
+gar G !(carMainCrossing & carSideCrossing);
+gar G(drainingIntersection)->(carMainCrossing | carSideCrossing);
+

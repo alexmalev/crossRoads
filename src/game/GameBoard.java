@@ -15,6 +15,8 @@ public class GameBoard {
     private Map<Tuple, Tile> boardMap = new HashMap<>();
     private int horizontalTiles = 20;
     private int verticalTiles = 15;
+    private boolean interfere = true;
+
     private Intersection intersection;
     private RoadQueue southExit;
     private RoadQueue northExit;
@@ -96,39 +98,20 @@ public class GameBoard {
 
 
     private int turn = 1;
-    private int greenTimer = 500;
-    private int delayTimer = 50;
-    Direction nextGreen1;
-    Direction nextGreen2;
+
     public void updateState() {
-        greenTimer--;
 
-        if (greenTimer == 0){
-            if (intersection.getEntrance(Direction.NORTH).isCanPass()){
-                intersection.getEntrance(Direction.NORTH).setCanPass(false);
-                intersection.getEntrance(Direction.SOUTH).setCanPass(false);
-                nextGreen1 = Direction.EAST;
-                nextGreen2 = Direction.WEST;
-            }
-            else {
-                intersection.getEntrance(Direction.EAST).setCanPass(false);
-                intersection.getEntrance(Direction.WEST).setCanPass(false);
-                nextGreen1 = Direction.NORTH;
-                nextGreen2 = Direction.SOUTH;
+        if (turn % 100 == 1) {
+            try {
+                intersection.getEntrance(Direction.EAST).getQueue().add(new VehicleImpl(new Tuple(800, 280), Direction.WEST));
+            } catch (IOException e1) {
+                e1.printStackTrace();
             }
         }
-        if (greenTimer == -50){
-            intersection.getEntrance(nextGreen1).setCanPass(true);
-            intersection.getEntrance(nextGreen2).setCanPass(true);
-            greenTimer = 500;
-        }
-
-        if (turn % 200 == 1) {
+        if (turn % 40 == 1) {
             try {
                 intersection.getEntrance(Direction.NORTH).getQueue().add(new VehicleImpl(new Tuple(400, -40), Direction.SOUTH));
-                intersection.getEntrance(Direction.SOUTH).getQueue().add(new VehicleImpl(new Tuple(420, 600), Direction.NORTH));
-                intersection.getEntrance(Direction.WEST).getQueue().add(new VehicleImpl(new Tuple(-40, 300), Direction.EAST));
-                intersection.getEntrance(Direction.EAST).getQueue().add(new VehicleImpl(new Tuple(800, 280), Direction.WEST));
+//
             } catch (IOException e1) {
                 e1.printStackTrace();
             }
@@ -138,15 +121,7 @@ public class GameBoard {
     }
 
     private void controlVehicles() {
-        LinkedList<Vehicle> northEntrance = intersection.getEntrance(Direction.NORTH).getQueue();
-        LinkedList<Vehicle> southEntrance = intersection.getEntrance(Direction.SOUTH).getQueue();
-        LinkedList<Vehicle> eastEntrance = intersection.getEntrance(Direction.EAST).getQueue();
-        LinkedList<Vehicle> westEntrance = intersection.getEntrance(Direction.WEST).getQueue();
-
-        controlVehiclesInQueue(northEntrance);
-        controlVehiclesInQueue(southEntrance);
-        controlVehiclesInQueue(eastEntrance);
-        controlVehiclesInQueue(westEntrance);
+        interfere = false;
         LinkedList<Vehicle> southExit = this.southExit.getQueue();
         LinkedList<Vehicle> northExit = this.northExit.getQueue();
         LinkedList<Vehicle> westExit = this.westExit.getQueue();
@@ -156,6 +131,17 @@ public class GameBoard {
         controlExit(northExit);
         controlExit(westExit);
         controlExit(eastExit);
+
+        LinkedList<Vehicle> northEntrance = intersection.getEntrance(Direction.NORTH).getQueue();
+        LinkedList<Vehicle> southEntrance = intersection.getEntrance(Direction.SOUTH).getQueue();
+        LinkedList<Vehicle> eastEntrance = intersection.getEntrance(Direction.EAST).getQueue();
+        LinkedList<Vehicle> westEntrance = intersection.getEntrance(Direction.WEST).getQueue();
+
+        controlVehiclesInQueue(northEntrance);
+        controlVehiclesInQueue(southEntrance);
+        controlVehiclesInQueue(eastEntrance);
+        controlVehiclesInQueue(westEntrance);
+
     }
 
     private void controlExit(LinkedList<Vehicle> exit) {
@@ -185,18 +171,25 @@ public class GameBoard {
     private void controlVehiclesInQueue(LinkedList<Vehicle> queue) {
         for (ListIterator<Vehicle> iterator = queue.listIterator(); iterator.hasNext(); ) {
             Vehicle currentVehicle = iterator.next();
+
             if (currentVehicle == queue.getFirst()) {
-                if (isFirstVehicleFreeToDrive(currentVehicle)) {
+//                System.out.println(currentVehicle.getDirection() + " " + currentVehicle.getPosition());
+                if (isFirstNotYetInIntersection(currentVehicle)) {
                     currentVehicle.drive(true);
-                } else if (isFirstVehicleAtIntersection(currentVehicle)) {
+                    if (isFirstVehicleBeforeIntersection(currentVehicle) &!isGreenLight(currentVehicle.getDirection())){
+                        intersection.getWaitingList(currentVehicle.getDirection()).add(currentVehicle);
+                        interfere = true;
+                    }
+
+                } else {
                     if (isGreenLight(currentVehicle.getDirection())) {
                         currentVehicle.drive(true);
+                        passVehicleToNextQueue(currentVehicle);
+                        iterator.remove();
+                        interfere = true;
                     } else {
                         currentVehicle.drive(false);
                     }
-                } else {
-                    passVehicleToNextQueue(currentVehicle);
-                    iterator.remove();
                 }
 
             } else {
@@ -206,6 +199,7 @@ public class GameBoard {
                     currentVehicle.drive(true);
                 } else {
                     currentVehicle.drive(false);
+                    intersection.getWaitingList(currentVehicle.getDirection()).add(currentVehicle);
                 }
                 iterator.next();
                 iterator.next();
@@ -214,18 +208,7 @@ public class GameBoard {
     }
 
     private boolean isGreenLight(Direction direction) {
-        switch (direction) {
-            case SOUTH:
-                return intersection.getEntrance(Direction.NORTH).isCanPass();
-            case NORTH:
-                return intersection.getEntrance(Direction.SOUTH).isCanPass();
-            case WEST:
-                return intersection.getEntrance(Direction.EAST).isCanPass();
-            case EAST:
-                return intersection.getEntrance(Direction.WEST).isCanPass();
-        }
-        return false;
-
+        return intersection.getEntrance(direction).isCanPass();
     }
 
     private boolean hasSpaceToMove(Vehicle currentVehicle, Vehicle vehicleInFront) {
@@ -257,9 +240,11 @@ public class GameBoard {
                 westExit.getQueue().add(vehicle);
                 break;
         }
+        System.out.println("removing vehicle from waiting" + vehicle.getDirection());
+        intersection.getWaitingList(vehicle.getDirection()).remove(vehicle);
     }
 
-    private boolean isFirstVehicleAtIntersection(Vehicle vehicle) {
+    private boolean isFirstVehicleBeforeIntersection(Vehicle vehicle) {
         switch (vehicle.getDirection()) {
             case SOUTH:
                 return vehicle.getPosition().getY() == intersection.getPosition().getY() * 40 - 40;
@@ -274,7 +259,36 @@ public class GameBoard {
 
     }
 
-    private boolean isFirstVehicleFreeToDrive(Vehicle vehicle) {
+    public boolean isSidePassing() {
+
+        return isVehicleInIntersection(eastExit.getQueue()) || isVehicleInIntersection(westExit.getQueue());
+
+    }
+    public boolean isMainPassing() {
+
+        return isVehicleInIntersection(northExit.getQueue()) || isVehicleInIntersection(southExit.getQueue());
+
+    }
+
+    private boolean isVehicleInIntersection(LinkedList<Vehicle> queue) {
+        if (queue.size() == 0)
+            return false;
+        Vehicle vehicle = queue.getLast();
+        switch (vehicle.getDirection()) {
+            case SOUTH:
+                return vehicle.getPosition().getY() < intersection.getPosition().getY() * 40 + 35;
+            case NORTH:
+                return vehicle.getPosition().getY() > intersection.getPosition().getY() * 40 - 45;
+            case EAST:
+                return vehicle.getPosition().getX() < intersection.getPosition().getX() * 40 + 35;
+            case WEST:
+                return vehicle.getPosition().getX() > intersection.getPosition().getX() * 40 - 45;
+        }
+        return false;
+    }
+
+
+    private boolean isFirstNotYetInIntersection(Vehicle vehicle) {
         switch (vehicle.getDirection()) {
             case SOUTH:
                 return vehicle.getPosition().getY() < intersection.getPosition().getY() * 40 - 40;
@@ -290,4 +304,11 @@ public class GameBoard {
 
     }
 
+    public Intersection getIntersection() {
+        return intersection;
+    }
+
+    public boolean isInterfere() {
+        return interfere;
+    }
 }

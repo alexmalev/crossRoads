@@ -1,14 +1,24 @@
 package game;
 
+import vehicles.Vehicle;
+
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by alexanderm on 06/01/2018.
  */
 public class Intersection {
     private Tuple position;
+    private Set<Vehicle> waitingNorth = new HashSet<>();
+    private Set<Vehicle> waitingSouth = new HashSet<>();
+    private Set<Vehicle> waitingWest = new HashSet<>();
+    private Set<Vehicle> waitingEast = new HashSet<>();
     private RoadQueue northEntrance = new RoadQueue(true);
     private RoadQueue southEntrance = new RoadQueue(true);
     private RoadQueue eastEntrance = new RoadQueue(false);
@@ -33,13 +43,26 @@ public class Intersection {
     public RoadQueue getEntrance(Direction direction) {
         switch (direction){
             case EAST:
-                return eastEntrance;
-            case SOUTH:
-                return southEntrance;
-            case WEST:
                 return westEntrance;
-            case NORTH:
+            case SOUTH:
                 return northEntrance;
+            case WEST:
+                return eastEntrance;
+            case NORTH:
+                return southEntrance;
+        }
+        return null;
+    }
+    public Set<Vehicle> getWaitingList(Direction direction){
+        switch (direction){
+            case EAST:
+                return waitingWest;
+            case SOUTH:
+                return waitingNorth;
+            case WEST:
+                return waitingEast;
+            case NORTH:
+                return waitingSouth;
         }
         return null;
     }

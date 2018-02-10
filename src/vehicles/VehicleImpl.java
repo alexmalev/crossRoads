@@ -16,7 +16,6 @@ public class VehicleImpl implements Vehicle {
     private Tuple position;
     private Direction direction;
     private BufferedImage carImage;
-    private int delayCounter = -1;
 
     public VehicleImpl(Tuple position, Direction direction) throws IOException {
         this.position = position;
@@ -50,8 +49,7 @@ public class VehicleImpl implements Vehicle {
 
     @Override
     public void drive(boolean state) {
-        delayCounter = state ? delayCounter -1: 20;
-        if (delayCounter < 0)
+        if (state)
             performMove(position);
     }
 
@@ -68,16 +66,16 @@ public class VehicleImpl implements Vehicle {
     private void performMove(Tuple position) {
         switch (direction) {
             case EAST:
-                position.moveX(1);
+                position.moveX(2);
                 break;
             case WEST:
-                position.moveX(-1);
+                position.moveX(-2);
                 break;
             case NORTH:
-                position.moveY(-1);
+                position.moveY(-2);
                 break;
             case SOUTH:
-                position.moveY(1);
+                position.moveY(2);
                 break;
         }
 
