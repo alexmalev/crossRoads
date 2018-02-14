@@ -108,7 +108,7 @@ public class GameBoard {
                 e1.printStackTrace();
             }
         }
-        if (turn % 40 == 1) {
+        if (turn % 60 == 1) {
             try {
                 intersection.getEntrance(Direction.NORTH).getQueue().add(new VehicleImpl(new Tuple(400, -40), Direction.SOUTH));
 //

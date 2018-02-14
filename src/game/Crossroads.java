@@ -135,7 +135,7 @@ public class Crossroads extends JComponent {
 //            }
             String carMainCrossing = String.valueOf(gameBoard.isMainPassing());
             String carSideCrossing = String.valueOf(gameBoard.isSidePassing());
-//            System.out.println("successing for: waitingNorth "+ waitingNorh + " waitingEast " + waitingEast + " mainCrossing " + carMainCrossing + " sideCrossing " + carSideCrossing);
+            System.out.println("successing for: waitingNorth "+ waitingNorh + " waitingEast " + waitingEast + " mainCrossing " + carMainCrossing + " sideCrossing " + carSideCrossing);
             BDD succWithVehicles = succs.and(Env.getBDDValue("carMain", waitingNorh))
                     .and(Env.getBDDValue("carSide", waitingEast))
                     .and(Env.getBDDValue("carMainCrossing", carMainCrossing))
