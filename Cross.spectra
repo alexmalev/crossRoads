@@ -40,10 +40,6 @@ predicate onGoLineShrinks(Color light, CarsCount thisLine, CarsCount otherLine)
   go(light) -> thisLine<otherLine | otherLine=0
 }
 
-predicate blinkBeforeSwitchingToRed(Color light)
-{
-  light = OFF & next(light = GREEN) | light=GREEN & next(light=OFF)
-}
 
 asm freshStart:
  carsWaitingInVerticalRoad=0 & carsWaitingInHorizontalRoad=0 &
@@ -67,6 +63,26 @@ asm ifHorizontalDontGoLineWillNotShrink:
   G next(carsWaitingInVerticalRoad) < carsWaitingInVerticalRoad -> go(verticalLights);
 
 
+
+predicate blinkBeforeSwitchingToRed(Color light)
+{
+  light = OFF & next(light = GREEN) | light=GREEN & next(light=OFF)
+}
+
+counter verticalBlinks(0..3) {
+    verticalBlinks=0;
+    inc: blinkBeforeSwitchingToRed(verticalLights);
+    reset: go(horizontalLights);
+    overflow: false;
+}
+
+counter horizontalBlinks(0..3) {
+    horizontalBlinks=0;
+    inc: blinkBeforeSwitchingToRed(horizontalLights);
+    reset: go(verticalLights);
+    overflow: false;
+}
+
 gar preventDisasters:
   G !accident;
 
@@ -76,41 +92,37 @@ gar eventualyGiveGoToVerticalIfLineIsLonger:
 gar eventualyGiveGoToHorizontalIfLineIsLonger:
   pRespondsToS(horizontalLineIsLonger,go(horizontalLights));
 
-
 gar stopVerticalCarsOnlyIfOtherLineIsBigger:
   pBecomesTrue_betweenQandR(horizontalLineIsLonger, go(verticalLights) , verticalBlinks>0);
 
 gar stopHorizontalCarsOnlyIfOtherLineIsBigger:
   pBecomesTrue_betweenQandR(verticalLineIsLonger, go(horizontalLights) , horizontalBlinks>0);
 
-counter verticalBlinks(0..3) {
-    verticalBlinks=0;
-    inc: blinkBeforeSwitchingToRed(verticalLights);
-    reset: go(horizontalLights);
-    overflow: false;
-}
 
-gar pBecomesTrue_betweenQandR(verticalBlinks=3,go(verticalLights),!go(verticalLights));
+gar alwaysBlinkBeforeChangingGoToNotGoForHorizontal:
+  pBecomesTrue_betweenQandR(horizontalBlinks=3,go(horizontalLights),!go(horizontalLights));
+gar alwaysBlinkBeforeChangingGoToNotGoForVertical:
+pBecomesTrue_betweenQandR(verticalBlinks=3,go(verticalLights),!go(verticalLights));
 
-gar G next(verticalLights = OFF) -> verticalLights=GREEN;
-gar G verticalBlinks > 0 & verticalBlinks <3 -> blinkBeforeSwitchingToRed(verticalLights);
+gar onlyBlinkVerticalAfterGreenLight:
+  G next(verticalLights = OFF) -> verticalLights=GREEN;
+gar onlyBlinkHorizontalAfterGreenLight:
+  G next(horizontalLights = OFF) -> horizontalLights= GREEN;
 
-counter horizontalBlinks(0..3) {
-    horizontalBlinks=0;
-    inc: blinkBeforeSwitchingToRed(horizontalLights);
-    reset: go(verticalLights);
-    overflow: false;
-}
-gar pBecomesTrue_betweenQandR(horizontalBlinks=3,go(horizontalLights),!go(horizontalLights));
+gar keepBlinkingVerticalIfNotYet3Times:
+  G verticalBlinks > 0 & verticalBlinks <3 -> blinkBeforeSwitchingToRed(verticalLights);
+gar keepBlinkingHorizontalIfNotYet3Times:
+  G horizontalBlinks > 0 & horizontalBlinks <3 -> blinkBeforeSwitchingToRed(horizontalLights);
 
-gar G next(horizontalLights = OFF) -> horizontalLights= GREEN;
-gar G horizontalBlinks > 0 & horizontalBlinks <3 -> blinkBeforeSwitchingToRed(horizontalLights);
+gar neverTurnOffVerticalLightForTwoTurnsInARow:
+  G !(verticalLights = OFF & next(verticalLights=OFF) );
+gar neverTurnOffHorizontalLightForTwoTurnsInARow:
+  G !(horizontalLights = OFF & next(horizontalLights=OFF) );
 
-gar G !(verticalLights = OFF & next(verticalLights=OFF) );
-gar G !(horizontalLights = OFF & next(horizontalLights=OFF) );
-
-gar G next(verticalLights = GREEN) & verticalLights = RED -> !verticalCarCrossing;
-gar G next(horizontalLights = GREEN) & horizontalLights = RED -> !horizontalCarCrossing;
+gar verticalGreenAfterRedOnlyIfVerticalCarNotCrossing:
+  G next(go(verticalLights)) & !go(verticalLights) -> !verticalCarCrossing;
+gar horizontalGreenAfterRedOnlyIfVerticalCarNotCrossing:
+  G next(go(horizontalLights)) & !go(horizontalLights) -> !horizontalCarCrossing;
 
 
 
