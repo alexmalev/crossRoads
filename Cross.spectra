@@ -1,89 +1,118 @@
 import "../patterns/DwyerPatterns.spectra"
-/*
- * Auto-generated Spectra file
- */
+
 module Cross4
-env Int(0..5) carMain;
-env Int(0..5) carSide;
-env boolean carMainCrossing;
-env boolean carSideCrossing;
-sys Color goMain;
-sys Color goSide;
+env CarsCount carsWaitingInVerticalRoad;
+env CarsCount carsWaitingInHorizontalRoad;
+env boolean verticalCarCrossing;
+env boolean horizontalCarCrossing;
+sys Color verticalLights;
+sys Color horizontalLights;
 
-
+type CarsCount = Int(0..5);
 type Color = {GREEN, RED, OFF};
+
 define
-  accident:= carMainCrossing & carSideCrossing;
+  accident:= verticalCarCrossing & horizontalCarCrossing;
+
 define
-  draining:= goMain = RED & goSide = RED;
+  clearingIntersection:= verticalLights = RED & horizontalLights = RED;
 
-asm inTheBeginningNoCars:
- carMain=0 & carSide=0 & ! carMainCrossing & !carSideCrossing;
+predicate go(Color trafficLight)
+{
+  trafficLight = GREEN | trafficLight = OFF
+}
 
-asm carWillCrossOnlyOnGreenLight:
-  G (next(carMainCrossing) & (!carMainCrossing)->goMain=GREEN | goMain=OFF) &
-  (next(carSideCrossing) & (!carSideCrossing)->goSide=GREEN | goSide=OFF);
+predicate carStartsToCross(boolean carIsCrossing)
+{
+  !carIsCrossing & next(carIsCrossing)
+}
 
-gar goMain = GREEN;
+predicate onDontGoCarsDontCross(Color light, boolean carCrossing)
+{
+  !go(light) -> ! carCrossing
+}
+predicate onGoLineShrinks(Color light, CarsCount thisLine, CarsCount otherLine)
+{
+  go(light) -> thisLine<otherLine | otherLine=0
+}
 
-asm GF goMain = RED -> !carMainCrossing;
-asm GF goSide = RED -> !carSideCrossing;
-asm GF goMain = GREEN -> carMain<carSide;
-asm GF goSide = GREEN -> carSide<carMain;
-asm G next(carSide) < carSide -> goSide!=RED;
-asm G next(carMain) < carMain -> goMain!=RED;
+asm freshStart:
+ carsWaitingInVerticalRoad=0 & carsWaitingInHorizontalRoad=0 &
+ !verticalCarCrossing & !horizontalCarCrossing;
+
+asm verticalCarsWillNotStartCrossingUnlessTrafficLightSaysGo:
+  G (carStartsToCross(verticalCarCrossing)->go(verticalLights));
+asm horizontalCarsWillNotStartCrossingUnlessTrafficLightSaysGo:
+  G  (carStartsToCross(horizontalCarCrossing) -> go(horizontalLights));
+
+asm GF onDontGoCarsDontCross(verticalLights, verticalCarCrossing);
+asm GF onDontGoCarsDontCross(horizontalLights, horizontalCarCrossing);
+
+asm GF onGoLineShrinks(verticalLights, carsWaitingInVerticalRoad, carsWaitingInHorizontalRoad);
+asm GF onGoLineShrinks(horizontalLights, carsWaitingInHorizontalRoad, carsWaitingInVerticalRoad);
 
 
-gar pRespondsToS(carMain>carSide,goMain = GREEN);
-gar pRespondsToS(carSide>carMain,goSide = GREEN);
-gar G !accident;
-gar G draining -> carMainCrossing | carSideCrossing;
-gar G (PREV(!blinkMain) & blinkMain -> carSide> carMain);
-gar G (PREV(!blinkSide) & blinkSide -> carMain> carSide);
+asm ifVerticalDontGoLineWillNotShrink:
+  G next(carsWaitingInHorizontalRoad) < carsWaitingInHorizontalRoad -> go(horizontalLights);
+asm ifHorizontalDontGoLineWillNotShrink:
+  G next(carsWaitingInVerticalRoad) < carsWaitingInVerticalRoad -> go(verticalLights);
 
-gar pBecomesTrue_betweenQandR(goSide = GREEN,draining SINCE (goMain = GREEN),goMain = GREEN);
-gar pBecomesTrue_betweenQandR(goMain = GREEN,draining SINCE (goSide = GREEN),goSide = GREEN);
 
-define blinkMain := goMain = OFF & next(goMain = GREEN) | goMain=GREEN & next(goMain=OFF);
+gar preventDisasters:
+  G !accident;
+
+gar giveGoToVerticalIfLineIsLonger:
+  pRespondsToS(carsWaitingInVerticalRoad>carsWaitingInHorizontalRoad,go(verticalLights));
+gar giveGoToHorizontalIfLineIsLonger:
+  pRespondsToS(carsWaitingInHorizontalRoad>carsWaitingInVerticalRoad,go(horizontalLights));
+
+
+//gar G next(clearingIntersection) -> verticalCarCrossing | horizontalCarCrossing;
+gar G (next(blinksMain =1) -> carsWaitingInHorizontalRoad> carsWaitingInVerticalRoad);
+gar G (next(blinksSide =1) -> carsWaitingInVerticalRoad> carsWaitingInHorizontalRoad);
+
+predicate blinkBeforeSwitchingToRed(Color light)
+{
+  light = OFF & next(light = GREEN) | light=GREEN & next(light=OFF)
+}
+
 
 counter blinksMain(0..3) {
     // initially no blinks
     blinksMain=0;
     // blinking is turning light on when it was off
-    inc: blinkMain;
+    inc: blinkBeforeSwitchingToRed(verticalLights);
     // reset counter when not at station
-    reset: goMain = RED;
+    reset: go(horizontalLights);
     // blink exactly 3 times
     overflow: false;
 }
-gar pBecomesTrue_betweenQandR(blinksMain=3,goMain = GREEN,goMain = RED);
+gar pBecomesTrue_betweenQandR(blinksMain=3,verticalLights = GREEN,verticalLights = RED);
 
-gar G goMain = OFF -> blinksMain >0;
-gar G blinksMain > 0 & blinksMain <3 -> blinkMain;
+gar G next(verticalLights = OFF) -> verticalLights=GREEN;
+gar G blinksMain > 0 & blinksMain <3 -> blinkBeforeSwitchingToRed(verticalLights);
 
 
-
-define blinkSide := goSide = OFF & next(goSide = GREEN) | goSide=GREEN & next(goSide=OFF);
 
 counter blinksSide(0..3) {
     // initially no blinks
     blinksSide=0;
     // blinking is turning light on when it was off
-    inc: blinkSide;
+    inc: blinkBeforeSwitchingToRed(horizontalLights);
     // reset counter when not at station
-    reset: goSide = RED;
+    reset: go(verticalLights);
     // blink exactly 3 times
     overflow: false;
 }
-gar pBecomesTrue_betweenQandR(blinksSide=3,goSide = GREEN,goSide = RED);
+gar pBecomesTrue_betweenQandR(blinksSide=3,horizontalLights = GREEN,horizontalLights = RED);
 
-gar G goSide = OFF -> blinksSide >0;
-gar G blinksSide > 0 & blinksSide <3 -> blinkSide;
+gar G next(horizontalLights = OFF) -> horizontalLights= GREEN;
+gar G blinksSide > 0 & blinksSide <3 -> blinkBeforeSwitchingToRed(horizontalLights);
 
-gar G !(goMain = OFF & next(goMain=OFF) );
-gar G !(goSide = OFF & next(goSide=OFF) );
+gar G !(verticalLights = OFF & next(verticalLights=OFF) );
+gar G !(horizontalLights = OFF & next(horizontalLights=OFF) );
 
-gar G PREV(draining) & !draining -> !carMainCrossing & !carSideCrossing;
+gar G next(!clearingIntersection) & clearingIntersection -> !verticalCarCrossing & !horizontalCarCrossing;
 //gar G PREV(draining) & goMain=GREEN -> carMain>=carSide;
 
 

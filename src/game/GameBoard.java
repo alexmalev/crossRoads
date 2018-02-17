@@ -101,13 +101,13 @@ public class GameBoard {
 
     private int eastTurn = 0;
     private int eastMin = 30;
-    private int eastMax = 100;
+    private int eastMax = 70;
     private int nextEast = getRandomInt(eastMin, eastMax);
 
-    private int westTurn = 0;
-    private int westMin = 30;
-    private int westMax = 100;
-    private int nextWest = getRandomInt(westMin, westMax);
+    private int northTurn = 0;
+    private int northMin = 30;
+    private int northMax = 100;
+    private int nextNorth = getRandomInt(northMin, northMax);
 
     private int getRandomInt(int min, int max) {
         return rand.nextInt((max+1) - min) + min;
@@ -118,19 +118,21 @@ public class GameBoard {
         if (eastTurn == nextEast){
             if (intersection.getWaitingList(Direction.WEST).size() <10)
                 intersection.getEntrance(Direction.EAST).getQueue().add(new VehicleImpl(new Tuple(800, 280), Direction.WEST));
-//            if(intersection.getWaitingList(Direction.SOUTH).size() <10)
-//                intersection.getEntrance(Direction.SOUTH).getQueue().add(new VehicleImpl(new Tuple(420, 600), Direction.NORTH));
+//            if (intersection.getWaitingList(Direction.WEST).size() <10)
+//                intersection.getEntrance(Direction.WEST).getQueue().add(new VehicleImpl(new Tuple(-40, 300), Direction.EAST));
+
             eastTurn = 0;
             nextEast = getRandomInt(eastMin,eastMax);
         }
-        westTurn ++;
-        if (westTurn == nextWest){
-//            if (intersection.getWaitingList(Direction.WEST).size() <10)
-//                intersection.getEntrance(Direction.WEST).getQueue().add(new VehicleImpl(new Tuple(-40, 300), Direction.EAST));
+        northTurn++;
+        if (northTurn == nextNorth){
+
+//            if(intersection.getWaitingList(Direction.SOUTH).size() <10)
+//                intersection.getEntrance(Direction.SOUTH).getQueue().add(new VehicleImpl(new Tuple(420, 600), Direction.NORTH));
             if(intersection.getWaitingList(Direction.SOUTH).size() <10)
                 intersection.getEntrance(Direction.NORTH).getQueue().add(new VehicleImpl(new Tuple(400, -40), Direction.SOUTH));
-            westTurn = 0;
-            nextWest = getRandomInt(westMin,westMax);
+            northTurn = 0;
+            nextNorth = getRandomInt(northMin, northMax);
         }
 
         controlVehicles();

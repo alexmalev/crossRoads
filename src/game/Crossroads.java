@@ -70,11 +70,6 @@ public class Crossroads extends JComponent {
             while (it.hasNext()) {
                 choices.add(it.next());
             }
-//            if(choices.size()==1){
-//                System.out.println("------------------------");
-//                System.out.println("choices are, "+choices);
-//                System.out.println("------------------------");
-//            }
             int pick = (int) Math.floor(Math.random() * choices.size());
             currentState = choices.get(pick).id();
             Env.free(choices);
@@ -95,16 +90,16 @@ public class Crossroads extends JComponent {
         boolean carSideCrossing = false;
         for (String s : stateVals) {
             String[] val = s.split(":");
-            if ("goMain".equals(val[0])) {
+            if ("verticalLights".equals(val[0])) {
                 goMain = Color.valueOf(val[1]);
             }
-            else if ("goSide".equals(val[0])) {
+            else if ("horizontalLights".equals(val[0])) {
                 goSide = Color.valueOf(val[1]);
             }
-            else if ("carMain".equals(val[0])) {
+            else if ("carsWaitingInVerticalRoad".equals(val[0])) {
                 carMain = Integer.valueOf(val[1]);
             }
-            else if ("carSide".equals(val[0])) {
+            else if ("carsWaitingInHorizontalRoad".equals(val[0])) {
                 carSide = Integer.valueOf(val[1]);
             }
             else if ("blinksMain".equals(val[0])){
@@ -113,10 +108,10 @@ public class Crossroads extends JComponent {
             else if ("blinksSide".equals(val[0])){
                 blinksSide = Integer.valueOf(val[1]);
             }
-            else if ("carMainCrossing".equals(val[0])){
+            else if ("verticalCarCrossing".equals(val[0])){
                 carMainCrossing = Boolean.valueOf(val[1]);
             }
-            else if ("carSideCrossing".equals(val[0])){
+            else if ("horizontalCarCrossing".equals(val[0])){
                 carSideCrossing = Boolean.valueOf(val[1]);
             }
 //            if("mainBlinks".equals(val[0]) && Integer.parseInt(val[1])>0) {
@@ -137,10 +132,10 @@ public class Crossroads extends JComponent {
     }
 
     private BDD setVehiclesState(BDD succs) {
-        BDDVarSet vehiclesVars = Env.getVar("carMain").support()
-                .union(Env.getVar("carSide").support())
-                .union(Env.getVar("carMainCrossing").support())
-                .union(Env.getVar("carSideCrossing").support());
+        BDDVarSet vehiclesVars = Env.getVar("carsWaitingInVerticalRoad").support()
+                .union(Env.getVar("carsWaitingInHorizontalRoad").support())
+                .union(Env.getVar("verticalCarCrossing").support())
+                .union(Env.getVar("horizontalCarCrossing").support());
         BDD.BDDIterator it = new BDD.BDDIterator(succs, vehiclesVars);
 
         Set<String> posPos = new HashSet<>();
@@ -155,21 +150,21 @@ public class Crossroads extends JComponent {
         if (posPos.size() > 1) {
 // TODO            waitForBanana = true;
 
-            int waitingNorh = gameBoard.getIntersection().getWaitingList(Direction.SOUTH).size();
+            int waitingNorh = gameBoard.getIntersection().getWaitingList(Direction.SOUTH).size() < 5 ? gameBoard.getIntersection().getWaitingList(Direction.SOUTH).size() : 5;
 //            if(waitingNorh > 0) {
 //                System.out.println("waiting north");
 //            }
-            int waitingEast = gameBoard.getIntersection().getWaitingList(Direction.WEST).size();
+            int waitingEast = gameBoard.getIntersection().getWaitingList(Direction.WEST).size() < 5 ? gameBoard.getIntersection().getWaitingList(Direction.WEST).size(): 5;
 //            if(waitingEast > 0) {
 //                System.out.println("waiting east");
 //            }
             String carMainCrossing = String.valueOf(gameBoard.isMainPassing());
             String carSideCrossing = String.valueOf(gameBoard.isSidePassing());
             System.out.println("successing for: waitingNorth "+ waitingNorh + " waitingEast " + waitingEast + " mainCrossing " + carMainCrossing + " sideCrossing " + carSideCrossing);
-            BDD succWithVehicles = succs.and(Env.getBDDValue("carMain", waitingNorh))
-                    .and(Env.getBDDValue("carSide", waitingEast))
-                    .and(Env.getBDDValue("carMainCrossing", carMainCrossing))
-                    .and(Env.getBDDValue("carSideCrossing", carSideCrossing)); //TODO
+            BDD succWithVehicles = succs.and(Env.getBDDValue("carsWaitingInVerticalRoad", waitingNorh))
+                    .and(Env.getBDDValue("carsWaitingInHorizontalRoad", waitingEast))
+                    .and(Env.getBDDValue("verticalCarCrossing", carMainCrossing))
+                    .and(Env.getBDDValue("horizontalCarCrossing", carSideCrossing)); //TODO
             return succWithVehicles;
         } else {
             return succs.id();
