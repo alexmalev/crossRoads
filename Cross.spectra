@@ -15,7 +15,10 @@ define
   accident:= verticalCarCrossing & horizontalCarCrossing;
 
 define
-  clearingIntersection:= verticalLights = RED & horizontalLights = RED;
+  verticalLineIsLonger := carsWaitingInVerticalRoad>carsWaitingInHorizontalRoad;
+
+define
+  horizontalLineIsLonger := carsWaitingInHorizontalRoad>carsWaitingInVerticalRoad;
 
 predicate go(Color trafficLight)
 {
@@ -31,9 +34,15 @@ predicate onDontGoCarsDontCross(Color light, boolean carCrossing)
 {
   !go(light) -> ! carCrossing
 }
+
 predicate onGoLineShrinks(Color light, CarsCount thisLine, CarsCount otherLine)
 {
   go(light) -> thisLine<otherLine | otherLine=0
+}
+
+predicate blinkBeforeSwitchingToRed(Color light)
+{
+  light = OFF & next(light = GREEN) | light=GREEN & next(light=OFF)
 }
 
 asm freshStart:
@@ -61,58 +70,47 @@ asm ifHorizontalDontGoLineWillNotShrink:
 gar preventDisasters:
   G !accident;
 
-gar giveGoToVerticalIfLineIsLonger:
-  pRespondsToS(carsWaitingInVerticalRoad>carsWaitingInHorizontalRoad,go(verticalLights));
-gar giveGoToHorizontalIfLineIsLonger:
-  pRespondsToS(carsWaitingInHorizontalRoad>carsWaitingInVerticalRoad,go(horizontalLights));
+gar eventualyGiveGoToVerticalIfLineIsLonger:
+  pRespondsToS(verticalLineIsLonger,go(verticalLights));
+
+gar eventualyGiveGoToHorizontalIfLineIsLonger:
+  pRespondsToS(horizontalLineIsLonger,go(horizontalLights));
 
 
-//gar G next(clearingIntersection) -> verticalCarCrossing | horizontalCarCrossing;
-gar G (next(blinksMain =1) -> carsWaitingInHorizontalRoad> carsWaitingInVerticalRoad);
-gar G (next(blinksSide =1) -> carsWaitingInVerticalRoad> carsWaitingInHorizontalRoad);
+gar stopVerticalCarsOnlyIfOtherLineIsBigger:
+  pBecomesTrue_betweenQandR(horizontalLineIsLonger, go(verticalLights) , verticalBlinks>0);
 
-predicate blinkBeforeSwitchingToRed(Color light)
-{
-  light = OFF & next(light = GREEN) | light=GREEN & next(light=OFF)
-}
+gar stopHorizontalCarsOnlyIfOtherLineIsBigger:
+  pBecomesTrue_betweenQandR(verticalLineIsLonger, go(horizontalLights) , horizontalBlinks>0);
 
-
-counter blinksMain(0..3) {
-    // initially no blinks
-    blinksMain=0;
-    // blinking is turning light on when it was off
+counter verticalBlinks(0..3) {
+    verticalBlinks=0;
     inc: blinkBeforeSwitchingToRed(verticalLights);
-    // reset counter when not at station
     reset: go(horizontalLights);
-    // blink exactly 3 times
     overflow: false;
 }
-gar pBecomesTrue_betweenQandR(blinksMain=3,verticalLights = GREEN,verticalLights = RED);
+
+gar pBecomesTrue_betweenQandR(verticalBlinks=3,go(verticalLights),!go(verticalLights));
 
 gar G next(verticalLights = OFF) -> verticalLights=GREEN;
-gar G blinksMain > 0 & blinksMain <3 -> blinkBeforeSwitchingToRed(verticalLights);
+gar G verticalBlinks > 0 & verticalBlinks <3 -> blinkBeforeSwitchingToRed(verticalLights);
 
-
-
-counter blinksSide(0..3) {
-    // initially no blinks
-    blinksSide=0;
-    // blinking is turning light on when it was off
+counter horizontalBlinks(0..3) {
+    horizontalBlinks=0;
     inc: blinkBeforeSwitchingToRed(horizontalLights);
-    // reset counter when not at station
     reset: go(verticalLights);
-    // blink exactly 3 times
     overflow: false;
 }
-gar pBecomesTrue_betweenQandR(blinksSide=3,horizontalLights = GREEN,horizontalLights = RED);
+gar pBecomesTrue_betweenQandR(horizontalBlinks=3,go(horizontalLights),!go(horizontalLights));
 
 gar G next(horizontalLights = OFF) -> horizontalLights= GREEN;
-gar G blinksSide > 0 & blinksSide <3 -> blinkBeforeSwitchingToRed(horizontalLights);
+gar G horizontalBlinks > 0 & horizontalBlinks <3 -> blinkBeforeSwitchingToRed(horizontalLights);
 
 gar G !(verticalLights = OFF & next(verticalLights=OFF) );
 gar G !(horizontalLights = OFF & next(horizontalLights=OFF) );
 
-gar G next(!clearingIntersection) & clearingIntersection -> !verticalCarCrossing & !horizontalCarCrossing;
-//gar G PREV(draining) & goMain=GREEN -> carMain>=carSide;
+gar G next(verticalLights = GREEN) & verticalLights = RED -> !verticalCarCrossing;
+gar G next(horizontalLights = GREEN) & horizontalLights = RED -> !horizontalCarCrossing;
+
 
 
