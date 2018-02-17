@@ -9,10 +9,11 @@ import java.util.LinkedList;
  */
 public class RoadQueue {
     private LinkedList<Vehicle> queue = new LinkedList<>();
-    private boolean canPass;
 
-    public RoadQueue(boolean canPass) {
-        this.canPass = canPass;
+    private Color light;
+
+    public RoadQueue(Color light) {
+        this.light = light;
     }
 
     public LinkedList<Vehicle> getQueue() {
@@ -20,12 +21,14 @@ public class RoadQueue {
     }
 
     public boolean isCanPass() {
-        return canPass;
+        return this.light.equals(Color.GREEN) || this.light.equals(Color.OFF);
     }
 
-    public void setCanPass(boolean canPass) {
-        this.canPass = canPass;
+    public void setLight(Color light) {
+        this.light = light;
     }
-
+    public Color getLight() {
+        return light;
+    }
 
 }

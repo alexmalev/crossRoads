@@ -11,6 +11,7 @@ import java.util.*;
  * Created by alexanderm on 06/01/2018.
  */
 public class GameBoard {
+    static Random rand = new Random();
 
     private Map<Tuple, Tile> boardMap = new HashMap<>();
     private int horizontalTiles = 20;
@@ -31,10 +32,10 @@ public class GameBoard {
     private void generateBoard(int numOfIntersections) throws IOException {
         Tuple intersectionPosition = insertIntersection(numOfIntersections);
         this.intersection = new Intersection(intersectionPosition);
-        this.southExit = new RoadQueue(true);
-        this.northExit = new RoadQueue(true);
-        this.eastExit = new RoadQueue(true);
-        this.westExit = new RoadQueue(true);
+        this.southExit = new RoadQueue(Color.GREEN);
+        this.northExit = new RoadQueue(Color.GREEN);
+        this.eastExit = new RoadQueue(Color.GREEN);
+        this.westExit = new RoadQueue(Color.GREEN);
         insertRoads(intersectionPosition);
     }
 
@@ -97,26 +98,41 @@ public class GameBoard {
     }
 
 
-    private int turn = 1;
 
-    public void updateState() {
+    private int eastTurn = 0;
+    private int eastMin = 30;
+    private int eastMax = 100;
+    private int nextEast = getRandomInt(eastMin, eastMax);
 
-        if (turn % 100 == 1) {
-            try {
+    private int westTurn = 0;
+    private int westMin = 30;
+    private int westMax = 100;
+    private int nextWest = getRandomInt(westMin, westMax);
+
+    private int getRandomInt(int min, int max) {
+        return rand.nextInt((max+1) - min) + min;
+    }
+
+    public void updateState() throws IOException {
+        eastTurn ++;
+        if (eastTurn == nextEast){
+            if (intersection.getWaitingList(Direction.WEST).size() <10)
                 intersection.getEntrance(Direction.EAST).getQueue().add(new VehicleImpl(new Tuple(800, 280), Direction.WEST));
-            } catch (IOException e1) {
-                e1.printStackTrace();
-            }
+//            if(intersection.getWaitingList(Direction.SOUTH).size() <10)
+//                intersection.getEntrance(Direction.SOUTH).getQueue().add(new VehicleImpl(new Tuple(420, 600), Direction.NORTH));
+            eastTurn = 0;
+            nextEast = getRandomInt(eastMin,eastMax);
         }
-        if (turn % 60 == 1) {
-            try {
+        westTurn ++;
+        if (westTurn == nextWest){
+//            if (intersection.getWaitingList(Direction.WEST).size() <10)
+//                intersection.getEntrance(Direction.WEST).getQueue().add(new VehicleImpl(new Tuple(-40, 300), Direction.EAST));
+            if(intersection.getWaitingList(Direction.SOUTH).size() <10)
                 intersection.getEntrance(Direction.NORTH).getQueue().add(new VehicleImpl(new Tuple(400, -40), Direction.SOUTH));
-//
-            } catch (IOException e1) {
-                e1.printStackTrace();
-            }
+            westTurn = 0;
+            nextWest = getRandomInt(westMin,westMax);
         }
-        turn++;
+
         controlVehicles();
     }
 
@@ -176,7 +192,7 @@ public class GameBoard {
 //                System.out.println(currentVehicle.getDirection() + " " + currentVehicle.getPosition());
                 if (isFirstNotYetInIntersection(currentVehicle)) {
                     currentVehicle.drive(true);
-                    if (isFirstVehicleBeforeIntersection(currentVehicle) &!isGreenLight(currentVehicle.getDirection())){
+                    if (isFirstVehicleBeforeIntersection(currentVehicle)){
                         intersection.getWaitingList(currentVehicle.getDirection()).add(currentVehicle);
                         interfere = true;
                     }
@@ -214,13 +230,13 @@ public class GameBoard {
     private boolean hasSpaceToMove(Vehicle currentVehicle, Vehicle vehicleInFront) {
         switch (currentVehicle.getDirection()) {
             case SOUTH:
-                return currentVehicle.getPosition().getY() < vehicleInFront.getPosition().getY() - 40;
+                return currentVehicle.getPosition().getY() <= vehicleInFront.getPosition().getY() - 40;
             case NORTH:
-                return currentVehicle.getPosition().getY() > vehicleInFront.getPosition().getY() + 40;
+                return currentVehicle.getPosition().getY() >= vehicleInFront.getPosition().getY() + 40;
             case EAST:
-                return currentVehicle.getPosition().getX() < vehicleInFront.getPosition().getX() - 40;
+                return currentVehicle.getPosition().getX() <= vehicleInFront.getPosition().getX() - 40;
             case WEST:
-                return currentVehicle.getPosition().getX() > vehicleInFront.getPosition().getX() + 40;
+                return currentVehicle.getPosition().getX() >= vehicleInFront.getPosition().getX() + 40;
         }
         return false;
     }

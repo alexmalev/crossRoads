@@ -16,6 +16,7 @@ public class VehicleImpl implements Vehicle {
     private Tuple position;
     private Direction direction;
     private BufferedImage carImage;
+    private int delayCounter = -1;
 
     public VehicleImpl(Tuple position, Direction direction) throws IOException {
         this.position = position;
@@ -49,7 +50,8 @@ public class VehicleImpl implements Vehicle {
 
     @Override
     public void drive(boolean state) {
-        if (state)
+        delayCounter = state ? delayCounter -1: 5;
+        if (delayCounter < 0)
             performMove(position);
     }
 

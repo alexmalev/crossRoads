@@ -8,10 +8,7 @@ import tau.smlab.syntech.jtlv.BDDPackage;
 import tau.smlab.syntech.jtlv.Env;
 
 import javax.swing.*;
-import javax.swing.Timer;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.util.*;
 
@@ -32,7 +29,7 @@ public class Crossroads extends JComponent {
         loadController();
         int i =0;
         while (true) {
-            if (i % 20 ==0){
+            if (i % 10 ==0){
                 try {
                     updateState();
                 } catch (InterruptedException e1) {
@@ -83,26 +80,59 @@ public class Crossroads extends JComponent {
             Env.free(choices);
             succsWithVehicles.free();
         }
-        System.out.println(Env.toNiceSignleLineString(currentState));
+//        System.out.println(Env.toNiceSignleLineString(currentState));
 
         // set values of class variables according to BDD
         String state = currentState.toStringWithDomains(Env.stringer);
         String[] stateVals = state.replace("<", "").replace(">", "").replace(" ", "").split(",");
-        boolean goMain = false;
-        boolean goSide = false;
+        Color goMain = null;
+        Color goSide = null;
+        int carMain = 0;
+        int carSide = 0;
+        int blinksMain = 0;
+        int blinksSide = 0;
+        boolean carMainCrossing= false;
+        boolean carSideCrossing = false;
         for (String s : stateVals) {
             String[] val = s.split(":");
             if ("goMain".equals(val[0])) {
-                goMain = Boolean.parseBoolean(val[1]);
+                goMain = Color.valueOf(val[1]);
             }
-            if ("goSide".equals(val[0])) {
-                goSide = Boolean.parseBoolean(val[1]);
+            else if ("goSide".equals(val[0])) {
+                goSide = Color.valueOf(val[1]);
             }
+            else if ("carMain".equals(val[0])) {
+                carMain = Integer.valueOf(val[1]);
+            }
+            else if ("carSide".equals(val[0])) {
+                carSide = Integer.valueOf(val[1]);
+            }
+            else if ("blinksMain".equals(val[0])){
+                blinksMain = Integer.valueOf(val[1]);
+            }
+            else if ("blinksSide".equals(val[0])){
+                blinksSide = Integer.valueOf(val[1]);
+            }
+            else if ("carMainCrossing".equals(val[0])){
+                carMainCrossing = Boolean.valueOf(val[1]);
+            }
+            else if ("carSideCrossing".equals(val[0])){
+                carSideCrossing = Boolean.valueOf(val[1]);
+            }
+//            if("mainBlinks".equals(val[0]) && Integer.parseInt(val[1])>0) {
+//                goMain = false;
+//                System.out.println("mainBlinks " + val[1]);
+//            }
+//            if("sideBlinks".equals(val[0]) && Integer.parseInt(val[1])>0){
+//                goSide = false;
+//                System.out.println("sideBlinks " + val[1]);
+//            }
         }
-        gameBoard.getIntersection().getEntrance(Direction.NORTH).setCanPass(goMain);
-        gameBoard.getIntersection().getEntrance(Direction.SOUTH).setCanPass(goMain);
-        gameBoard.getIntersection().getEntrance(Direction.EAST).setCanPass(goSide);
-        gameBoard.getIntersection().getEntrance(Direction.WEST).setCanPass(goSide);
+        System.out.println("goMain: " + goMain + " goSide: " + goSide + " carMain " + carMain + " carSide " + carSide + " blinksMain: " + blinksMain + " blinksSide: " + blinksSide + " carMainCrossing: " + carMainCrossing + " carSideCrosing: " + carSideCrossing );
+        gameBoard.getIntersection().getEntrance(Direction.NORTH).setLight(goMain);
+        gameBoard.getIntersection().getEntrance(Direction.SOUTH).setLight(goMain);
+        gameBoard.getIntersection().getEntrance(Direction.EAST).setLight(goSide);
+        gameBoard.getIntersection().getEntrance(Direction.WEST).setLight(goSide);
 
     }
 
@@ -145,6 +175,7 @@ public class Crossroads extends JComponent {
             return succs.id();
         }
     }
+
 
     public static void main(String[] args) throws Exception {
         JFrame window = new JFrame("Crossroads");

@@ -19,18 +19,22 @@ public class Intersection {
     private Set<Vehicle> waitingSouth = new HashSet<>();
     private Set<Vehicle> waitingWest = new HashSet<>();
     private Set<Vehicle> waitingEast = new HashSet<>();
-    private RoadQueue northEntrance = new RoadQueue(true);
-    private RoadQueue southEntrance = new RoadQueue(true);
-    private RoadQueue eastEntrance = new RoadQueue(false);
-    private RoadQueue westEntrance = new RoadQueue(false);
+    private RoadQueue northEntrance = new RoadQueue(Color.GREEN);
+    private RoadQueue southEntrance = new RoadQueue(Color.GREEN);
+    private RoadQueue eastEntrance = new RoadQueue(Color.RED);
+    private RoadQueue westEntrance = new RoadQueue(Color.RED);
     private BufferedImage greenLightNorth = ImageIO.read(getClass().getResource("greenLightNorth.png"));
     private BufferedImage redLightNorth = ImageIO.read(getClass().getResource("redLightNorth.png"));
+    private BufferedImage offLightNorth = ImageIO.read(getClass().getResource("offLightNorth.png"));
     private BufferedImage greenLightEast = ImageIO.read(getClass().getResource("greenLightEast.png"));
     private BufferedImage redLightEast = ImageIO.read(getClass().getResource("redLightEast.png"));
+    private BufferedImage offLightEast = ImageIO.read(getClass().getResource("offLightEast.png"));
     private BufferedImage greenLightSouth = ImageIO.read(getClass().getResource("greenLightSouth.png"));
     private BufferedImage redLightSouth = ImageIO.read(getClass().getResource("redLightSouth.png"));
+    private BufferedImage offLightSouth = ImageIO.read(getClass().getResource("offLightSouth.png"));
     private BufferedImage greenLightWest = ImageIO.read(getClass().getResource("greenLightWest.png"));
     private BufferedImage redLightWest = ImageIO.read(getClass().getResource("redLightWest.png"));
+    private BufferedImage offLightWest = ImageIO.read(getClass().getResource("offLightWest.png"));
 
     public Intersection(Tuple position) throws IOException {
         this.position = position;
@@ -70,13 +74,29 @@ public class Intersection {
     public BufferedImage getTrafficLightImage(Direction direction){
         switch (direction){
             case NORTH:
-                return northEntrance.isCanPass() ? greenLightNorth : redLightNorth;
+                if (northEntrance.getLight().equals(Color.GREEN))
+                    return greenLightNorth;
+                if (northEntrance.getLight().equals(Color.RED))
+                    return redLightNorth;
+                return offLightNorth;
             case WEST:
-                return westEntrance.isCanPass() ? greenLightWest : redLightWest;
+                if (westEntrance.getLight().equals(Color.GREEN))
+                    return greenLightWest;
+                if (westEntrance.getLight().equals(Color.RED))
+                    return redLightWest;
+                return offLightWest;
             case SOUTH:
-                return southEntrance.isCanPass() ? greenLightSouth : redLightSouth;
+                if (southEntrance.getLight().equals(Color.GREEN))
+                    return greenLightSouth;
+                if (southEntrance.getLight().equals(Color.RED))
+                    return redLightSouth;
+                return offLightSouth;
             case EAST:
-                return eastEntrance.isCanPass() ? greenLightEast : redLightEast;
+                if (eastEntrance.getLight().equals(Color.GREEN))
+                    return greenLightEast;
+                if (eastEntrance.getLight().equals(Color.RED))
+                    return redLightEast;
+                return offLightEast;
         }
         return null;
     }

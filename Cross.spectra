@@ -3,38 +3,87 @@ import "../patterns/DwyerPatterns.spectra"
  * Auto-generated Spectra file
  */
 module Cross4
-env Int(0..10) carMain;
-env Int(0..10) carSide;
+env Int(0..5) carMain;
+env Int(0..5) carSide;
 env boolean carMainCrossing;
 env boolean carSideCrossing;
-sys boolean goMain;
-sys boolean goSide;
+sys Color goMain;
+sys Color goSide;
 
-//asm onRedLightCarsAccumulate:
-//  G (!goMain -> next(carMain) >= carMain) &
-//  (!goSide -> next(carSide) >= carSide);
-//
-//asm onGreenCarsCanDriveThtough:
-//  G ((goMain)  -> next(carMain) <= carMain) &
-//  ((goSide)  -> next(carSide) <= carSide);
 
-asm carMain=0 & carSide=0 & ! carMainCrossing & !carSideCrossing;
-gar goMain;
+type Color = {GREEN, RED, OFF};
+define
+  accident:= carMainCrossing & carSideCrossing;
+define
+  draining:= goMain = RED & goSide = RED;
+
+asm inTheBeginningNoCars:
+ carMain=0 & carSide=0 & ! carMainCrossing & !carSideCrossing;
+
 asm carWillCrossOnlyOnGreenLight:
-  G (next(carMainCrossing) & (!carMainCrossing)->goMain) &
-  (next(carSideCrossing) & (!carSideCrossing)->goSide);
+  G (next(carMainCrossing) & (!carMainCrossing)->goMain=GREEN | goMain=OFF) &
+  (next(carSideCrossing) & (!carSideCrossing)->goSide=GREEN | goSide=OFF);
 
-asm pRespondsToS(!goMain ,!carMainCrossing);
-asm pRespondsToS(!goSide, !carSideCrossing);
+gar goMain = GREEN;
+
+asm GF goMain = RED -> !carMainCrossing;
+asm GF goSide = RED -> !carSideCrossing;
+asm GF goMain = GREEN -> carMain<carSide;
+asm GF goSide = GREEN -> carSide<carMain;
+asm G next(carSide) < carSide -> goSide!=RED;
+asm G next(carMain) < carMain -> goMain!=RED;
+
+
+gar pRespondsToS(carMain>carSide,goMain = GREEN);
+gar pRespondsToS(carSide>carMain,goSide = GREEN);
+gar G !accident;
+gar G draining -> carMainCrossing | carSideCrossing;
+gar G (PREV(!blinkMain) & blinkMain -> carSide> carMain);
+gar G (PREV(!blinkSide) & blinkSide -> carMain> carSide);
+
+gar pBecomesTrue_betweenQandR(goSide = GREEN,draining SINCE (goMain = GREEN),goMain = GREEN);
+gar pBecomesTrue_betweenQandR(goMain = GREEN,draining SINCE (goSide = GREEN),goSide = GREEN);
+
+define blinkMain := goMain = OFF & next(goMain = GREEN) | goMain=GREEN & next(goMain=OFF);
+
+counter blinksMain(0..3) {
+    // initially no blinks
+    blinksMain=0;
+    // blinking is turning light on when it was off
+    inc: blinkMain;
+    // reset counter when not at station
+    reset: goMain = RED;
+    // blink exactly 3 times
+    overflow: false;
+}
+gar pBecomesTrue_betweenQandR(blinksMain=3,goMain = GREEN,goMain = RED);
+
+gar G goMain = OFF -> blinksMain >0;
+gar G blinksMain > 0 & blinksMain <3 -> blinkMain;
 
 
 
-gar GF carMain>0 -> goMain;
-gar GF carSide>0 -> goSide;
-gar G !(carMainCrossing & carSideCrossing);
-gar G(!carMainCrossing & !carSideCrossing-> next(goMain | goSide));
-weight 1
-  carMain >= carSide & next(goMain) | carSide>carMain & next(goSide);
+define blinkSide := goSide = OFF & next(goSide = GREEN) | goSide=GREEN & next(goSide=OFF);
 
-weight -1
-  carMain >= carSide & next(goSide) | carSide>carMain & next(goMain);
+counter blinksSide(0..3) {
+    // initially no blinks
+    blinksSide=0;
+    // blinking is turning light on when it was off
+    inc: blinkSide;
+    // reset counter when not at station
+    reset: goSide = RED;
+    // blink exactly 3 times
+    overflow: false;
+}
+gar pBecomesTrue_betweenQandR(blinksSide=3,goSide = GREEN,goSide = RED);
+
+gar G goSide = OFF -> blinksSide >0;
+gar G blinksSide > 0 & blinksSide <3 -> blinkSide;
+
+gar G !(goMain = OFF & next(goMain=OFF) );
+gar G !(goSide = OFF & next(goSide=OFF) );
+
+gar G PREV(draining) & !draining -> !carMainCrossing & !carSideCrossing;
+//gar G PREV(draining) & goMain=GREEN -> carMain>=carSide;
+
+
