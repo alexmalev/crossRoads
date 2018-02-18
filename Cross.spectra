@@ -106,20 +106,16 @@ gar alwaysBlinkBeforeChangingGoToNotGoForHorizontal:
 gar alwaysBlinkBeforeChangingGoToNotGoForVertical:
 pBecomesTrue_betweenQandR(verticalBlinks=3,go(verticalLights),!go(verticalLights));
 
-gar onlyBlinkVerticalAfterGreenLight:
-  G next(verticalLights = OFF) -> verticalLights=GREEN;
-gar onlyBlinkHorizontalAfterGreenLight:
-  G next(horizontalLights = OFF) -> horizontalLights= GREEN;
+gar useVerticalOffOnlyWhenBlinking:
+  G next(verticalLights = OFF) -> blinkBeforeSwitchingToRed(verticalLights);
+gar useHorizontalOffOnlyWhenBlinking:
+  G next(horizontalLights = OFF) -> blinkBeforeSwitchingToRed(horizontalLights);
 
 gar keepBlinkingVerticalIfNotYet3Times:
   G verticalBlinks > 0 & verticalBlinks <3 -> blinkBeforeSwitchingToRed(verticalLights);
 gar keepBlinkingHorizontalIfNotYet3Times:
   G horizontalBlinks > 0 & horizontalBlinks <3 -> blinkBeforeSwitchingToRed(horizontalLights);
 
-gar neverTurnOffVerticalLightForTwoTurnsInARow:
-  G !(verticalLights = OFF & next(verticalLights=OFF) );
-gar neverTurnOffHorizontalLightForTwoTurnsInARow:
-  G !(horizontalLights = OFF & next(horizontalLights=OFF) );
 
 gar verticalGreenAfterRedOnlyIfVerticalCarNotCrossing:
   G next(go(verticalLights)) & !go(verticalLights) -> !verticalCarCrossing;
