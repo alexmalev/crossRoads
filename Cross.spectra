@@ -11,6 +11,7 @@ sys Color horizontalLights;
 type CarsCount = Int(0..5);
 type Color = {GREEN, RED, OFF};
 
+
 define
   accident:= verticalCarCrossing & horizontalCarCrossing;
 
@@ -35,33 +36,34 @@ predicate onDontGoCarsDontCross(Color light, boolean carCrossing)
   !go(light) -> ! carCrossing
 }
 
-predicate onGoLineShrinks(Color light, CarsCount thisLine, CarsCount otherLine)
-{
-  go(light) -> thisLine<otherLine | otherLine=0
+monitor boolean waitingForVerticalCarToPass{
+  !waitingForVerticalCarToPass;
+  G next(waitingForVerticalCarToPass) =
+      ((waitingForVerticalCarToPass | !go(verticalLights)) & verticalCarCrossing);
 }
 
+monitor boolean waitingForHorizontalCarToPass{
+  !waitingForHorizontalCarToPass;
+  G next(waitingForHorizontalCarToPass) =
+      ((waitingForHorizontalCarToPass | !go(horizontalLights)) & horizontalCarCrossing);
+}
 
 asm freshStart:
  carsWaitingInVerticalRoad=0 & carsWaitingInHorizontalRoad=0 &
  !verticalCarCrossing & !horizontalCarCrossing;
+
+asm GF !waitingForVerticalCarToPass;
+asm GF !waitingForHorizontalCarToPass;
 
 asm verticalCarsWillNotStartCrossingUnlessTrafficLightSaysGo:
   G (carStartsToCross(verticalCarCrossing)->go(verticalLights));
 asm horizontalCarsWillNotStartCrossingUnlessTrafficLightSaysGo:
   G  (carStartsToCross(horizontalCarCrossing) -> go(horizontalLights));
 
-asm GF onDontGoCarsDontCross(verticalLights, verticalCarCrossing);
-asm GF onDontGoCarsDontCross(horizontalLights, horizontalCarCrossing);
-
-asm GF onGoLineShrinks(verticalLights, carsWaitingInVerticalRoad, carsWaitingInHorizontalRoad);
-asm GF onGoLineShrinks(horizontalLights, carsWaitingInHorizontalRoad, carsWaitingInVerticalRoad);
-
-
 asm ifVerticalDontGoLineWillNotShrink:
   G next(carsWaitingInHorizontalRoad) < carsWaitingInHorizontalRoad -> go(horizontalLights);
 asm ifHorizontalDontGoLineWillNotShrink:
   G next(carsWaitingInVerticalRoad) < carsWaitingInVerticalRoad -> go(verticalLights);
-
 
 
 predicate blinkBeforeSwitchingToRed(Color light)

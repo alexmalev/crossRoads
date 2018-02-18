@@ -102,10 +102,10 @@ public class Crossroads extends JComponent {
             else if ("carsWaitingInHorizontalRoad".equals(val[0])) {
                 carSide = Integer.valueOf(val[1]);
             }
-            else if ("blinksMain".equals(val[0])){
+            else if ("verticalBlinks".equals(val[0])){
                 blinksMain = Integer.valueOf(val[1]);
             }
-            else if ("blinksSide".equals(val[0])){
+            else if ("horizontalBlinks".equals(val[0])){
                 blinksSide = Integer.valueOf(val[1]);
             }
             else if ("verticalCarCrossing".equals(val[0])){
@@ -114,14 +114,7 @@ public class Crossroads extends JComponent {
             else if ("horizontalCarCrossing".equals(val[0])){
                 carSideCrossing = Boolean.valueOf(val[1]);
             }
-//            if("mainBlinks".equals(val[0]) && Integer.parseInt(val[1])>0) {
-//                goMain = false;
-//                System.out.println("mainBlinks " + val[1]);
-//            }
-//            if("sideBlinks".equals(val[0]) && Integer.parseInt(val[1])>0){
-//                goSide = false;
-//                System.out.println("sideBlinks " + val[1]);
-//            }
+
         }
         System.out.println("goMain: " + goMain + " goSide: " + goSide + " carMain " + carMain + " carSide " + carSide + " blinksMain: " + blinksMain + " blinksSide: " + blinksSide + " carMainCrossing: " + carMainCrossing + " carSideCrosing: " + carSideCrossing );
         gameBoard.getIntersection().getEntrance(Direction.NORTH).setLight(goMain);
