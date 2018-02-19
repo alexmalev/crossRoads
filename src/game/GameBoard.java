@@ -25,12 +25,12 @@ public class GameBoard {
     private RoadQueue westExit;
 
 
-    public GameBoard(int numOfIntersections) throws IOException {
-        generateBoard(numOfIntersections);
+    public GameBoard() throws IOException {
+        generateBoard();
     }
 
-    private void generateBoard(int numOfIntersections) throws IOException {
-        Tuple intersectionPosition = insertIntersection(numOfIntersections);
+    private void generateBoard() throws IOException {
+        Tuple intersectionPosition = insertIntersection();
         this.intersection = new Intersection(intersectionPosition);
         this.southExit = new RoadQueue(Color.GREEN);
         this.northExit = new RoadQueue(Color.GREEN);
@@ -39,9 +39,9 @@ public class GameBoard {
         insertRoads(intersectionPosition);
     }
 
-    private Tuple insertIntersection(int numOfIntersections) throws IOException {
-        int intersectionX = horizontalTiles / (numOfIntersections + 1);
-        int intersectionY = verticalTiles / (numOfIntersections + 1);
+    private Tuple insertIntersection() throws IOException {
+        int intersectionX = horizontalTiles / 2;
+        int intersectionY = verticalTiles / 2;
         Tuple position = new Tuple(intersectionX, intersectionY);
         boardMap.put(position, new Tile(TileType.INTERSECTION));
         return position;
@@ -98,41 +98,48 @@ public class GameBoard {
     }
 
 
+     int eastTurn = 0;
+     int westTurn = 0;
+    private int horizontalMin = 30;
+    int horizontalMax = 31;
+    private int nextEast = getRandomInt(horizontalMin, horizontalMax);
+    private int nextWest = getRandomInt(horizontalMin, horizontalMax);
 
-    private int eastTurn = 0;
-    private int eastMin = 30;
-    private int eastMax = 70;
-    private int nextEast = getRandomInt(eastMin, eastMax);
-
-    private int northTurn = 0;
-    private int northMin = 30;
-    private int northMax = 100;
-    private int nextNorth = getRandomInt(northMin, northMax);
+     int northTurn = 0;
+     int southTurn = 0;
+    private int verticalMin = 30;
+    int verticalMax = 31;
+    private int nextNorth = getRandomInt(verticalMin, verticalMax);
+    private int nextSouth = getRandomInt(verticalMin, verticalMax);
 
     private int getRandomInt(int min, int max) {
-        return rand.nextInt((max+1) - min) + min;
+        return rand.nextInt((max + 1) - min) + min;
     }
 
     public void updateState() throws IOException {
-        eastTurn ++;
-        if (eastTurn == nextEast){
-            if (intersection.getWaitingList(Direction.WEST).size() <10)
-                intersection.getEntrance(Direction.EAST).getQueue().add(new VehicleImpl(new Tuple(800, 280), Direction.WEST));
-//            if (intersection.getWaitingList(Direction.WEST).size() <10)
-//                intersection.getEntrance(Direction.WEST).getQueue().add(new VehicleImpl(new Tuple(-40, 300), Direction.EAST));
-
-            eastTurn = 0;
-            nextEast = getRandomInt(eastMin,eastMax);
-        }
+        eastTurn++;
+        westTurn++;
         northTurn++;
-        if (northTurn == nextNorth){
-
-//            if(intersection.getWaitingList(Direction.SOUTH).size() <10)
-//                intersection.getEntrance(Direction.SOUTH).getQueue().add(new VehicleImpl(new Tuple(420, 600), Direction.NORTH));
-            if(intersection.getWaitingList(Direction.SOUTH).size() <10)
-                intersection.getEntrance(Direction.NORTH).getQueue().add(new VehicleImpl(new Tuple(400, -40), Direction.SOUTH));
+        southTurn++;
+        if (eastTurn == nextEast) {
+            intersection.getEntrance(Direction.EAST).getQueue().add(new VehicleImpl(new Tuple(800, 280), Direction.WEST));
+            eastTurn = 0;
+            nextEast = getRandomInt(horizontalMin, horizontalMax);
+        }
+        if (westTurn == nextWest) {
+            intersection.getEntrance(Direction.WEST).getQueue().add(new VehicleImpl(new Tuple(-40, 300), Direction.EAST));
+            westTurn = 0;
+            nextWest = getRandomInt(horizontalMin, horizontalMax);
+        }
+        if (northTurn == nextNorth) {
+            intersection.getEntrance(Direction.NORTH).getQueue().add(new VehicleImpl(new Tuple(400, -40), Direction.SOUTH));
             northTurn = 0;
-            nextNorth = getRandomInt(northMin, northMax);
+            nextNorth = getRandomInt(verticalMin, verticalMax);
+        }
+        if (southTurn == nextSouth) {
+            intersection.getEntrance(Direction.SOUTH).getQueue().add(new VehicleImpl(new Tuple(420, 600), Direction.NORTH));
+            southTurn = 0;
+            nextSouth = getRandomInt(verticalMin, verticalMax);
         }
 
         controlVehicles();
@@ -194,7 +201,7 @@ public class GameBoard {
 //                System.out.println(currentVehicle.getDirection() + " " + currentVehicle.getPosition());
                 if (isFirstNotYetInIntersection(currentVehicle)) {
                     currentVehicle.drive(true);
-                    if (isFirstVehicleBeforeIntersection(currentVehicle)){
+                    if (isFirstVehicleBeforeIntersection(currentVehicle)) {
                         intersection.getWaitingList(currentVehicle.getDirection()).add(currentVehicle);
                         interfere = true;
                     }
@@ -282,6 +289,7 @@ public class GameBoard {
         return isVehicleInIntersection(eastExit.getQueue()) || isVehicleInIntersection(westExit.getQueue());
 
     }
+
     public boolean isMainPassing() {
 
         return isVehicleInIntersection(northExit.getQueue()) || isVehicleInIntersection(southExit.getQueue());

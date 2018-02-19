@@ -15,20 +15,32 @@ import java.util.*;
 /**
  * Created by alexanderm on 05/01/2018.
  */
-public class Crossroads extends JComponent {
+public class Crossroads extends JPanel {
     GameBoard gameBoard;
     private BDD currentState;
     private SymbolicController ctrl;
     private boolean initialState = true;
+    private int lineMax = 5;
+    static JSlider verticalSlider;
+    static JSlider horizontalSlider;
+
 
     public Crossroads() throws IOException {
-        gameBoard = new GameBoard(1);
+        gameBoard = new GameBoard();
     }
 
     public void run() throws Exception {
         loadController();
         int i =0;
         while (true) {
+            if (!verticalSlider.getValueIsAdjusting() &  gameBoard.verticalMax != verticalSlider.getValue()){
+                gameBoard.verticalMax = verticalSlider.getValue();
+
+            }
+            if (!horizontalSlider.getValueIsAdjusting() & gameBoard.horizontalMax != horizontalSlider.getValue()){
+                gameBoard.horizontalMax = horizontalSlider.getValue();
+            }
+
             if (i % 10 ==0){
                 try {
                     updateState();
@@ -141,21 +153,16 @@ public class Crossroads extends JComponent {
         }
 
         if (posPos.size() > 1) {
-// TODO            waitForBanana = true;
-
-            int waitingNorh = gameBoard.getIntersection().getWaitingList(Direction.SOUTH).size() < 5 ? gameBoard.getIntersection().getWaitingList(Direction.SOUTH).size() : 5;
-//            if(waitingNorh > 0) {
-//                System.out.println("waiting north");
-//            }
-            int waitingEast = gameBoard.getIntersection().getWaitingList(Direction.WEST).size() < 5 ? gameBoard.getIntersection().getWaitingList(Direction.WEST).size(): 5;
-//            if(waitingEast > 0) {
-//                System.out.println("waiting east");
-//            }
+            int waitingNorth = gameBoard.getIntersection().getWaitingList(Direction.SOUTH).size();
+            int waitingSouth = gameBoard.getIntersection().getWaitingList(Direction.NORTH).size();
+            int verticalWaiting = waitingNorth + waitingSouth < lineMax ? waitingNorth + waitingSouth : lineMax;
+            int waitingEast = gameBoard.getIntersection().getWaitingList(Direction.WEST).size();
+            int waitingWest = gameBoard.getIntersection().getWaitingList(Direction.EAST).size();
+            int horizontalWaiting = waitingEast + waitingWest < lineMax ? waitingEast + waitingWest : lineMax;
             String carMainCrossing = String.valueOf(gameBoard.isMainPassing());
             String carSideCrossing = String.valueOf(gameBoard.isSidePassing());
-            System.out.println("successing for: waitingNorth "+ waitingNorh + " waitingEast " + waitingEast + " mainCrossing " + carMainCrossing + " sideCrossing " + carSideCrossing);
-            BDD succWithVehicles = succs.and(Env.getBDDValue("carsWaitingInVerticalRoad", waitingNorh))
-                    .and(Env.getBDDValue("carsWaitingInHorizontalRoad", waitingEast))
+            BDD succWithVehicles = succs.and(Env.getBDDValue("carsWaitingInVerticalRoad", verticalWaiting))
+                    .and(Env.getBDDValue("carsWaitingInHorizontalRoad", horizontalWaiting))
                     .and(Env.getBDDValue("verticalCarCrossing", carMainCrossing))
                     .and(Env.getBDDValue("horizontalCarCrossing", carSideCrossing)); //TODO
             return succWithVehicles;
@@ -164,18 +171,49 @@ public class Crossroads extends JComponent {
         }
     }
 
-
-    public static void main(String[] args) throws Exception {
+    private static void createAndShowGUI(Crossroads crossroadsGame) {
+        UIManager.put("swing.boldMetal", Boolean.FALSE);
         JFrame window = new JFrame("Crossroads");
-        Crossroads crossroadsGame = new Crossroads();
+        window.setLayout(new FlowLayout());
+        JPanel controlPanel = new JPanel(new BorderLayout());
+        controlPanel.setLayout(new BoxLayout(controlPanel, BoxLayout.Y_AXIS));
+        Font font = new Font("Serif", Font.BOLD, 14);
+        Hashtable<Integer, JLabel> labelTable = new Hashtable<>();
+        labelTable.put(40, new JLabel("High") );
+        labelTable.put(1000, new JLabel("Low") );
+        verticalSlider = new JSlider(JSlider.HORIZONTAL, 40, 1000, 75);
+        horizontalSlider = new JSlider(JSlider.HORIZONTAL, 40, 1000, 75);
+        verticalSlider.setInverted(true);
+        horizontalSlider.setInverted(true);
+        verticalSlider.setFont(font);
+        horizontalSlider.setFont(font);
+        verticalSlider.setLabelTable( labelTable );
+        horizontalSlider.setLabelTable( labelTable );
+        verticalSlider.setPaintLabels(true);
+        horizontalSlider.setPaintLabels(true);
+        JLabel verticalSliderLabel = new JLabel("Vertical Frequency");
+        JLabel horizontalSliderLabel = new JLabel("Horizontal Frequency");
+        verticalSliderLabel.setFont(font);
+        horizontalSliderLabel.setFont(font);
+        controlPanel.add(verticalSliderLabel);
+        controlPanel.add(verticalSlider);
+        controlPanel.add(horizontalSliderLabel);
+        controlPanel.add(horizontalSlider);
+
         window.add(crossroadsGame);
+        window.add(controlPanel);
         window.pack();
         window.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         window.setLocationRelativeTo(null);
         window.setVisible(true);
+        window.setResizable(false);
+    }
+
+
+    public static void main(String[] args) throws Exception {
+        Crossroads crossroadsGame = new Crossroads();
+        createAndShowGUI(crossroadsGame);
         crossroadsGame.run();
-//        Timer timer = new Timer(30, crossroadsGame);
-//        timer.start();
     }
 
     @Override
@@ -187,21 +225,4 @@ public class Crossroads extends JComponent {
     protected void paintComponent(Graphics g) {
         gameBoard.draw(g);
     }
-
-//    @Override
-//    public void actionPerformed(ActionEvent e) {
-//        if (gameBoard.isInterfere()){
-//            try {
-//                updateState();
-//            } catch (InterruptedException e1) {
-//                e1.printStackTrace();
-//            }
-//        }
-//        gameBoard.updateState();
-//
-//
-//        repaint();
-//    }
-
-
 }
