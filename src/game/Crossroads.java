@@ -9,8 +9,12 @@ import tau.smlab.syntech.jtlv.Env;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 /**
  * Created by alexanderm on 05/01/2018.
@@ -21,8 +25,11 @@ public class Crossroads extends JPanel {
     private SymbolicController ctrl;
     private boolean initialState = true;
     private int lineMax = 5;
+    private int controllerInterval = 10;
     static JSlider verticalSlider;
     static JSlider horizontalSlider;
+    static JSlider controllerSlider;
+
 
 
     public Crossroads() throws IOException {
@@ -35,13 +42,25 @@ public class Crossroads extends JPanel {
         while (true) {
             if (!verticalSlider.getValueIsAdjusting() &  gameBoard.verticalMax != verticalSlider.getValue()){
                 gameBoard.verticalMax = verticalSlider.getValue();
+                gameBoard.nextNorth = gameBoard.getRandomInt(gameBoard.verticalMin, gameBoard.verticalMax);
+                gameBoard.nextSouth = gameBoard.getRandomInt(gameBoard.verticalMin, gameBoard.verticalMax);
+                gameBoard.northTurn = 0;
+                gameBoard.southTurn = 0;
 
             }
             if (!horizontalSlider.getValueIsAdjusting() & gameBoard.horizontalMax != horizontalSlider.getValue()){
                 gameBoard.horizontalMax = horizontalSlider.getValue();
+                gameBoard.nextEast = gameBoard.getRandomInt(gameBoard.horizontalMin, gameBoard.horizontalMax);
+                gameBoard.nextWest = gameBoard.getRandomInt(gameBoard.horizontalMin, gameBoard.horizontalMax);
+                gameBoard.eastTurn = 0;
+                gameBoard.westTurn = 0;
+
+            }
+            if (!controllerSlider.getValueIsAdjusting() & controllerInterval != controllerSlider.getValue()){
+                controllerInterval = controllerSlider.getValue();
             }
 
-            if (i % 10 ==0){
+            if (i % controllerInterval ==0){
                 try {
                     updateState();
                 } catch (InterruptedException e1) {
@@ -181,20 +200,33 @@ public class Crossroads extends JPanel {
         Hashtable<Integer, JLabel> labelTable = new Hashtable<>();
         labelTable.put(40, new JLabel("High") );
         labelTable.put(1000, new JLabel("Low") );
+        Hashtable<Integer, JLabel> controllerlabelTable = new Hashtable<>();
+        controllerlabelTable.put(1, new JLabel("0.03"));
+        controllerlabelTable.put(33, new JLabel("1"));
+        controllerlabelTable.put(66, new JLabel("2"));
         verticalSlider = new JSlider(JSlider.HORIZONTAL, 40, 1000, 75);
         horizontalSlider = new JSlider(JSlider.HORIZONTAL, 40, 1000, 75);
+        controllerSlider = new JSlider(JSlider.HORIZONTAL, 1, 66, 10);
         verticalSlider.setInverted(true);
         horizontalSlider.setInverted(true);
+        controllerSlider.setInverted(true);
         verticalSlider.setFont(font);
         horizontalSlider.setFont(font);
+        controllerSlider.setFont(font);
         verticalSlider.setLabelTable( labelTable );
         horizontalSlider.setLabelTable( labelTable );
+        controllerSlider.setLabelTable(controllerlabelTable);
         verticalSlider.setPaintLabels(true);
         horizontalSlider.setPaintLabels(true);
-        JLabel verticalSliderLabel = new JLabel("Vertical Frequency");
-        JLabel horizontalSliderLabel = new JLabel("Horizontal Frequency");
+        controllerSlider.setPaintLabels(true);
+        JLabel verticalSliderLabel = new JLabel("Vertical Car Frequency");
+        JLabel horizontalSliderLabel = new JLabel("Horizontal Car Frequency");
+        JLabel controlSliderLabel = new JLabel("traffic control interval (sec)");
         verticalSliderLabel.setFont(font);
         horizontalSliderLabel.setFont(font);
+        controlSliderLabel.setFont(font);
+        controlPanel.add(controlSliderLabel);
+        controlPanel.add(controllerSlider);
         controlPanel.add(verticalSliderLabel);
         controlPanel.add(verticalSlider);
         controlPanel.add(horizontalSliderLabel);
@@ -209,9 +241,44 @@ public class Crossroads extends JPanel {
         window.setResizable(false);
     }
 
+    int findMaxLineCount(String line){
+        int result = -1;
+        line = line.replaceAll("\\s+","");
+        Pattern p = Pattern.compile("(?<=CarsCount=Int\\([0-9]\\.\\.)[0-9]+(?=\\))");
+        Matcher m = p.matcher(line);
+        if (m.find()){
+            String foundPattern = m.group();
+            result = Integer.parseInt(foundPattern);
+        }
+        return result;
+    }
 
+    void setMaxLine() throws IOException {
+        String fileToBeExtracted="Cross4/Cross4.spectra";
+        String zipPackage="./out/spec.zip";
+        FileInputStream fileInputStream = new FileInputStream(zipPackage);
+        BufferedInputStream bufferedInputStream = new BufferedInputStream(fileInputStream );
+        ZipInputStream zin = new ZipInputStream(bufferedInputStream);
+        ZipEntry ze;
+        while ((ze = zin.getNextEntry()) != null) {
+            if (ze.getName().equals(fileToBeExtracted)) {
+                byte[] buffer = new byte[9000];
+                while ((zin.read(buffer)) != -1) {
+                    String spec = new String(buffer);
+                    int newMax = findMaxLineCount(spec);
+                    if (newMax > 0){
+                        lineMax = newMax;
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+        zin.close();
+    }
     public static void main(String[] args) throws Exception {
         Crossroads crossroadsGame = new Crossroads();
+        crossroadsGame.setMaxLine();
         createAndShowGUI(crossroadsGame);
         crossroadsGame.run();
     }

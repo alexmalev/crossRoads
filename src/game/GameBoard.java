@@ -98,21 +98,21 @@ public class GameBoard {
     }
 
 
-     int eastTurn = 0;
-     int westTurn = 0;
-    private int horizontalMin = 30;
+    int eastTurn = 0;
+    int westTurn = 0;
+    int horizontalMin = 30;
     int horizontalMax = 31;
-    private int nextEast = getRandomInt(horizontalMin, horizontalMax);
-    private int nextWest = getRandomInt(horizontalMin, horizontalMax);
+    int nextEast = getRandomInt(horizontalMin, horizontalMax);
+    int nextWest = getRandomInt(horizontalMin, horizontalMax);
 
-     int northTurn = 0;
-     int southTurn = 0;
-    private int verticalMin = 30;
+    int northTurn = 0;
+    int southTurn = 0;
+    int verticalMin = 30;
     int verticalMax = 31;
-    private int nextNorth = getRandomInt(verticalMin, verticalMax);
-    private int nextSouth = getRandomInt(verticalMin, verticalMax);
+    int nextNorth = getRandomInt(verticalMin, verticalMax);
+    int nextSouth = getRandomInt(verticalMin, verticalMax);
 
-    private int getRandomInt(int min, int max) {
+    int getRandomInt(int min, int max) {
         return rand.nextInt((max + 1) - min) + min;
     }
 
