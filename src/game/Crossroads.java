@@ -1,12 +1,9 @@
 package game;
-
 import net.sf.javabdd.BDD;
-import net.sf.javabdd.BDDVarSet;
 import tau.smlab.syntech.games.controller.symbolic.SymbolicController;
 import tau.smlab.syntech.games.controller.symbolic.SymbolicControllerReaderWriter;
 import tau.smlab.syntech.jtlv.BDDPackage;
 import tau.smlab.syntech.jtlv.Env;
-
 import javax.swing.*;
 import java.awt.*;
 import java.io.*;
@@ -36,37 +33,36 @@ public class Crossroads extends JPanel {
         loadController();
         long i = 0;
         while (true) {
-            if (!verticalSlider.getValueIsAdjusting() & gameBoard.verticalMax != verticalSlider.getValue()) {
-                gameBoard.verticalMax = verticalSlider.getValue();
-                gameBoard.nextNorth = gameBoard.getRandomInt(gameBoard.verticalMin, gameBoard.verticalMax);
-                gameBoard.nextSouth = gameBoard.getRandomInt(gameBoard.verticalMin, gameBoard.verticalMax);
-                gameBoard.northTurn = 0;
-                gameBoard.southTurn = 0;
-
-            }
-            if (!horizontalSlider.getValueIsAdjusting() & gameBoard.horizontalMax != horizontalSlider.getValue()) {
-                gameBoard.horizontalMax = horizontalSlider.getValue();
-                gameBoard.nextEast = gameBoard.getRandomInt(gameBoard.horizontalMin, gameBoard.horizontalMax);
-                gameBoard.nextWest = gameBoard.getRandomInt(gameBoard.horizontalMin, gameBoard.horizontalMax);
-                gameBoard.eastTurn = 0;
-                gameBoard.westTurn = 0;
-
-            }
-            if (!controllerSlider.getValueIsAdjusting() & controllerInterval != controllerSlider.getValue()) {
-                controllerInterval = controllerSlider.getValue();
-            }
+            getUserInputFromSliders();
             if (i % controllerInterval == 0) {
-                try {
-                    updateState();
-                } catch (InterruptedException e1) {
-                    e1.printStackTrace();
-                }
+                updateSpectraState();
             }
-            gameBoard.updateState();
-
+            gameBoard.updateGameBoard();
             i++;
             repaint();
             Thread.sleep(30);
+        }
+    }
+
+    private void getUserInputFromSliders() {
+        if (!verticalSlider.getValueIsAdjusting() & gameBoard.verticalMax != verticalSlider.getValue()) {
+            gameBoard.verticalMax = verticalSlider.getValue();
+            gameBoard.nextNorth = gameBoard.getRandomInt(gameBoard.verticalMin, gameBoard.verticalMax);
+            gameBoard.nextSouth = gameBoard.getRandomInt(gameBoard.verticalMin, gameBoard.verticalMax);
+            gameBoard.northTurn = 0;
+            gameBoard.southTurn = 0;
+
+        }
+        if (!horizontalSlider.getValueIsAdjusting() & gameBoard.horizontalMax != horizontalSlider.getValue()) {
+            gameBoard.horizontalMax = horizontalSlider.getValue();
+            gameBoard.nextEast = gameBoard.getRandomInt(gameBoard.horizontalMin, gameBoard.horizontalMax);
+            gameBoard.nextWest = gameBoard.getRandomInt(gameBoard.horizontalMin, gameBoard.horizontalMax);
+            gameBoard.eastTurn = 0;
+            gameBoard.westTurn = 0;
+
+        }
+        if (!controllerSlider.getValueIsAdjusting() & controllerInterval != controllerSlider.getValue()) {
+            controllerInterval = controllerSlider.getValue();
         }
     }
 
@@ -81,7 +77,7 @@ public class Crossroads extends JPanel {
         initialState = true;
     }
 
-    private void updateState() throws InterruptedException {
+    private void updateSpectraState() throws InterruptedException {
         if (initialState) {
             BDD one = currentState.satOne(Env.globalUnprimeVars());
             currentState.free();
@@ -91,25 +87,22 @@ public class Crossroads extends JPanel {
             BDD succs = ctrl.succ(currentState);
             BDD succsWithVehicles = setVehiclesState(succs);
             succs.free();
-            java.util.List<BDD> choices = new ArrayList<>();
+            java.util.List<BDD> systemChoices = new ArrayList<>();
             BDD.BDDIterator it = new BDD.BDDIterator(succsWithVehicles, Env.globalUnprimeVars());
             while (it.hasNext()) {
-                choices.add(it.next());
+                systemChoices.add(it.next());
             }
-            int pick = (int) Math.floor(Math.random() * choices.size());
-            currentState = choices.get(pick).id();
-            Env.free(choices);
+            int pick = (int) Math.floor(Math.random() * systemChoices.size());
+            currentState = systemChoices.get(pick).id();
+            Env.free(systemChoices);
             succsWithVehicles.free();
         }
         String state = currentState.toStringWithDomains(Env.stringer);
         String[] stateVals = state.replace("<", "").replace(">", "").replace(" ", "").split(",");
         SystemState systemState = getSystemState(stateVals);
-
-        gameBoard.getIntersection().getEntrance(Direction.NORTH).setLight(systemState.getVerticalLight());
-        gameBoard.getIntersection().getEntrance(Direction.SOUTH).setLight(systemState.getVerticalLight());
-        gameBoard.getIntersection().getEntrance(Direction.EAST).setLight(systemState.getHorizontalLight());
-        gameBoard.getIntersection().getEntrance(Direction.WEST).setLight(systemState.getHorizontalLight());
+        controlLightsWithSpectra(systemState);
     }
+
 
     private SystemState getSystemState(String[] stateVals) {
         Color verticalLight = null;
@@ -155,45 +148,33 @@ public class Crossroads extends JPanel {
             }
         }
         System.out.println("vertical: " + verticalLight + " horizontal: " + horizontalLight +
-                " vertical Q: " + verticalQueue + " horizontal Q: " + horizontalQueue +
-                " vertical blinks: " + verticalBlinks + "horizontal blinks: " + horizontalBlinks +
-                " vertical crossing: " + verticalCarCrossing + "horizontal crossing: " + horizontalCarCrossing);
+                " vertical queue: " + verticalQueue + " horizontal queue: " + horizontalQueue +
+                " vertical blinks: " + verticalBlinks + " horizontal blinks: " + horizontalBlinks +
+                " vertical crossing: " + verticalCarCrossing + " horizontal crossing: " + horizontalCarCrossing);
         return new SystemState(verticalLight, horizontalLight);
     }
 
     private BDD setVehiclesState(BDD succs) {
-        BDDVarSet environmentVars = Env.getVar("carsWaitingInVerticalRoad").support()
-                .union(Env.getVar("carsWaitingInHorizontalRoad").support())
-                .union(Env.getVar("verticalCarCrossing").support())
-                .union(Env.getVar("horizontalCarCrossing").support());
-        BDD.BDDIterator it = new BDD.BDDIterator(succs, environmentVars);
-        Set<String> posPos = new HashSet<>();
-        while (it.hasNext()) {
-            BDD vehicleCounts = it.next();
-            String state = vehicleCounts.toStringWithDomains(Env.stringer);
-            if (!posPos.contains(state)) {
-                posPos.add(state);
-            }
-        }
-
-        if (posPos.size() > 1) {
-            int waitingNorth = gameBoard.getIntersection().getWaitingList(Direction.SOUTH).size();
-            int waitingSouth = gameBoard.getIntersection().getWaitingList(Direction.NORTH).size();
-            int waitingEast = gameBoard.getIntersection().getWaitingList(Direction.WEST).size();
-            int waitingWest = gameBoard.getIntersection().getWaitingList(Direction.EAST).size();
-            int verticalWaiting = waitingNorth + waitingSouth < lineMax ? waitingNorth + waitingSouth : lineMax;
-            int horizontalWaiting = waitingEast + waitingWest < lineMax ? waitingEast + waitingWest : lineMax;
-            String carMainCrossing = String.valueOf(gameBoard.isMainPassing());
-            String carSideCrossing = String.valueOf(gameBoard.isSidePassing());
-            return succs.and(Env.getBDDValue("carsWaitingInVerticalRoad", verticalWaiting))
-                    .and(Env.getBDDValue("carsWaitingInHorizontalRoad", horizontalWaiting))
-                    .and(Env.getBDDValue("verticalCarCrossing", carMainCrossing))
-                    .and(Env.getBDDValue("horizontalCarCrossing", carSideCrossing));
-        } else {
-            return succs.id();
-        }
+        int waitingNorth = gameBoard.getIntersection().getWaitingList(Direction.SOUTH).size();
+        int waitingSouth = gameBoard.getIntersection().getWaitingList(Direction.NORTH).size();
+        int waitingEast = gameBoard.getIntersection().getWaitingList(Direction.WEST).size();
+        int waitingWest = gameBoard.getIntersection().getWaitingList(Direction.EAST).size();
+        int verticalWaiting = waitingNorth + waitingSouth < lineMax ? waitingNorth + waitingSouth : lineMax;
+        int horizontalWaiting = waitingEast + waitingWest < lineMax ? waitingEast + waitingWest : lineMax;
+        String carMainCrossing = String.valueOf(gameBoard.isMainPassing());
+        String carSideCrossing = String.valueOf(gameBoard.isSidePassing());
+        return succs.and(Env.getBDDValue("carsWaitingInVerticalRoad", verticalWaiting))
+                .and(Env.getBDDValue("carsWaitingInHorizontalRoad", horizontalWaiting))
+                .and(Env.getBDDValue("verticalCarCrossing", carMainCrossing))
+                .and(Env.getBDDValue("horizontalCarCrossing", carSideCrossing));
     }
 
+    private void controlLightsWithSpectra(SystemState systemState) {
+        gameBoard.getIntersection().getEntrance(Direction.NORTH).setLight(systemState.getVerticalLight());
+        gameBoard.getIntersection().getEntrance(Direction.SOUTH).setLight(systemState.getVerticalLight());
+        gameBoard.getIntersection().getEntrance(Direction.EAST).setLight(systemState.getHorizontalLight());
+        gameBoard.getIntersection().getEntrance(Direction.WEST).setLight(systemState.getHorizontalLight());
+    }
     private static void createAndShowGUI(Crossroads crossroadsGame) {
         UIManager.put("swing.boldMetal", Boolean.FALSE);
         JFrame window = new JFrame("Crossroads");

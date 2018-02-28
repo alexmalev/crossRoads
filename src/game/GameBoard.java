@@ -1,22 +1,17 @@
 package game;
 
 import vehicles.Vehicle;
-import vehicles.VehicleImpl;
 
 import java.awt.*;
 import java.io.IOException;
 import java.util.*;
 
-/**
- * Created by alexanderm on 06/01/2018.
- */
 public class GameBoard {
-    static Random rand = new Random();
+    private static Random rand = new Random();
 
     private Map<Tuple, Tile> boardMap = new HashMap<>();
     private int horizontalTiles = 20;
     private int verticalTiles = 15;
-    private boolean interfere = true;
 
     private Intersection intersection;
     private RoadQueue southExit;
@@ -25,7 +20,7 @@ public class GameBoard {
     private RoadQueue westExit;
 
 
-    public GameBoard() throws IOException {
+    GameBoard() throws IOException {
         generateBoard();
     }
 
@@ -37,6 +32,7 @@ public class GameBoard {
         this.eastExit = new RoadQueue(Color.GREEN);
         this.westExit = new RoadQueue(Color.GREEN);
         insertRoads(intersectionPosition);
+        insertGrass();
     }
 
     private Tuple insertIntersection() throws IOException {
@@ -54,23 +50,31 @@ public class GameBoard {
                 continue;
             boardMap.put(tilePosition, new Tile(TileType.HORIZONTAL));
         }
-        for (int j = 0; j < horizontalTiles; j++) {
+        for (int j = 0; j < verticalTiles; j++) {
             Tuple tilePosition = new Tuple(intersectionPosition.getX(), j);
             if (boardMap.containsKey(tilePosition))
                 continue;
             boardMap.put(tilePosition, new Tile(TileType.VERTICAL));
         }
     }
+    private void insertGrass() throws IOException {
+        for (int i = 0; i < horizontalTiles; i++) {
+            for (int j = 0; j < verticalTiles; j++) {
+                Tuple tilePosition = new Tuple(i, j);
+                if (!boardMap.containsKey(tilePosition))
+                    boardMap.put(tilePosition, new Tile(TileType.GRASS));
+            }
+        }
+    }
 
-    public void draw(Graphics g) {
+    void draw(Graphics g) {
+        for (Tuple tuple : boardMap.keySet()) {
+            boardMap.get(tuple).draw(tuple, g);
+        }
         g.drawImage(intersection.getTrafficLightImage(Direction.NORTH), (intersection.getPosition().getX() - 1) * 40, (intersection.getPosition().getY() - 1) * 40, null);
         g.drawImage(intersection.getTrafficLightImage(Direction.EAST), (intersection.getPosition().getX() + 1) * 40, (intersection.getPosition().getY() - 1) * 40, null);
         g.drawImage(intersection.getTrafficLightImage(Direction.SOUTH), (intersection.getPosition().getX() + 1) * 40, (intersection.getPosition().getY() + 1) * 40, null);
         g.drawImage(intersection.getTrafficLightImage(Direction.WEST), (intersection.getPosition().getX() - 1) * 40, (intersection.getPosition().getY() + 1) * 40, null);
-        for (Tuple tuple : boardMap.keySet()) {
-            boardMap.get(tuple).draw(tuple, g);
-        }
-
         for (Vehicle vehicle : intersection.getEntrance(Direction.NORTH).getQueue()) {
             vehicle.draw(g);
         }
@@ -116,28 +120,28 @@ public class GameBoard {
         return rand.nextInt((max + 1) - min) + min;
     }
 
-    public void updateState() throws IOException {
+    void updateGameBoard() throws IOException {
         eastTurn++;
         westTurn++;
         northTurn++;
         southTurn++;
         if (eastTurn == nextEast) {
-            intersection.getEntrance(Direction.EAST).getQueue().add(new VehicleImpl(new Tuple(800, 280), Direction.WEST));
+            intersection.getEntrance(Direction.EAST).getQueue().add(new Vehicle(new Tuple(800, 280), Direction.WEST));
             eastTurn = 0;
             nextEast = getRandomInt(horizontalMin, horizontalMax);
         }
         if (westTurn == nextWest) {
-            intersection.getEntrance(Direction.WEST).getQueue().add(new VehicleImpl(new Tuple(-40, 300), Direction.EAST));
+            intersection.getEntrance(Direction.WEST).getQueue().add(new Vehicle(new Tuple(-40, 300), Direction.EAST));
             westTurn = 0;
             nextWest = getRandomInt(horizontalMin, horizontalMax);
         }
         if (northTurn == nextNorth) {
-            intersection.getEntrance(Direction.NORTH).getQueue().add(new VehicleImpl(new Tuple(400, -40), Direction.SOUTH));
+            intersection.getEntrance(Direction.NORTH).getQueue().add(new Vehicle(new Tuple(400, -40), Direction.SOUTH));
             northTurn = 0;
             nextNorth = getRandomInt(verticalMin, verticalMax);
         }
         if (southTurn == nextSouth) {
-            intersection.getEntrance(Direction.SOUTH).getQueue().add(new VehicleImpl(new Tuple(420, 600), Direction.NORTH));
+            intersection.getEntrance(Direction.SOUTH).getQueue().add(new Vehicle(new Tuple(420, 600), Direction.NORTH));
             southTurn = 0;
             nextSouth = getRandomInt(verticalMin, verticalMax);
         }
@@ -146,7 +150,6 @@ public class GameBoard {
     }
 
     private void controlVehicles() {
-        interfere = false;
         LinkedList<Vehicle> southExit = this.southExit.getQueue();
         LinkedList<Vehicle> northExit = this.northExit.getQueue();
         LinkedList<Vehicle> westExit = this.westExit.getQueue();
@@ -196,14 +199,11 @@ public class GameBoard {
     private void controlVehiclesInQueue(LinkedList<Vehicle> queue) {
         for (ListIterator<Vehicle> iterator = queue.listIterator(); iterator.hasNext(); ) {
             Vehicle currentVehicle = iterator.next();
-
             if (currentVehicle == queue.getFirst()) {
-//                System.out.println(currentVehicle.getDirection() + " " + currentVehicle.getPosition());
                 if (isFirstNotYetInIntersection(currentVehicle)) {
                     currentVehicle.drive(true);
                     if (isFirstVehicleBeforeIntersection(currentVehicle)) {
                         intersection.getWaitingList(currentVehicle.getDirection()).add(currentVehicle);
-                        interfere = true;
                     }
 
                 } else {
@@ -211,7 +211,6 @@ public class GameBoard {
                         currentVehicle.drive(true);
                         passVehicleToNextQueue(currentVehicle);
                         iterator.remove();
-                        interfere = true;
                     } else {
                         currentVehicle.drive(false);
                     }
@@ -265,7 +264,6 @@ public class GameBoard {
                 westExit.getQueue().add(vehicle);
                 break;
         }
-//        System.out.println("removing vehicle from waiting" + vehicle.getDirection());
         intersection.getWaitingList(vehicle.getDirection()).remove(vehicle);
     }
 
@@ -334,7 +332,4 @@ public class GameBoard {
         return intersection;
     }
 
-    public boolean isInterfere() {
-        return interfere;
-    }
 }

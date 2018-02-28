@@ -5,14 +5,9 @@ import vehicles.Vehicle;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
-/**
- * Created by alexanderm on 06/01/2018.
- */
 public class Intersection {
     private Tuple position;
     private Set<Vehicle> waitingNorth = new HashSet<>();
@@ -82,32 +77,24 @@ public class Intersection {
                     return greenLightNorth;
                 if (northEntrance.getLight().equals(Color.RED))
                     return redLightNorth;
-                if (northEntrance.getLight().equals(Color.YELLOW))
-                    return yellowLightNorth;
                 return offLightNorth;
             case WEST:
                 if (westEntrance.getLight().equals(Color.GREEN))
                     return greenLightWest;
                 if (westEntrance.getLight().equals(Color.RED))
                     return redLightWest;
-                if (westEntrance.getLight().equals(Color.YELLOW))
-                    return yellowLightWest;
                 return offLightWest;
             case SOUTH:
                 if (southEntrance.getLight().equals(Color.GREEN))
                     return greenLightSouth;
                 if (southEntrance.getLight().equals(Color.RED))
                     return redLightSouth;
-                if (southEntrance.getLight().equals(Color.YELLOW))
-                    return yellowLightSouth;
                 return offLightSouth;
             case EAST:
                 if (eastEntrance.getLight().equals(Color.GREEN))
                     return greenLightEast;
                 if (eastEntrance.getLight().equals(Color.RED))
                     return redLightEast;
-                if (eastEntrance.getLight().equals(Color.YELLOW))
-                    return yellowLightEast;
                 return offLightEast;
         }
         return null;

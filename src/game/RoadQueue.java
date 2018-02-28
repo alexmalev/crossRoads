@@ -4,9 +4,7 @@ import vehicles.Vehicle;
 
 import java.util.LinkedList;
 
-/**
- * Created by alexanderm on 08/01/2018.
- */
+
 public class RoadQueue {
     private LinkedList<Vehicle> queue = new LinkedList<>();
 

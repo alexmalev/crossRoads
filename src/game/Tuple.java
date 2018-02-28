@@ -2,9 +2,6 @@ package game;
 
 import java.util.Objects;
 
-/**
- * Created by alexanderm on 05/01/2018.
- */
 public class Tuple {
     private int x;
     private int y;
@@ -14,9 +11,6 @@ public class Tuple {
         this.y = y;
     }
 
-    public Tuple(Tuple other) {
-        this(other.x, other.y);
-    }
 
     public int getX() {
         return x;
